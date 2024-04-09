@@ -8,6 +8,7 @@
 
 /** Set (opaque) structure */
 typedef struct Set_t Set;
+typedef struct RNode_t RNode;
 
 /**
  * @brief Create an empty set. The returned set needs to be freed
@@ -62,4 +63,7 @@ int setInsert(Set *set, const char *key);
  */
 List *setGetAllStringPrefixes(const Set *set, const char *string);
 
+void getRoot(Set *set);
+void generateRadixTreeDOT(Set *radixTree, const char *filename);
+void writeRadixTreeDOT(FILE *file, RNode *node);
 #endif // !_SET_H_
