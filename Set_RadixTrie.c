@@ -49,9 +49,9 @@ static Edge *createEdge(RNode *source, RNode *destination, const char* label){
 
     newEdge->label = malloc(strlen(label) + 1);
     if(!newEdge->label){
+        printf("newRadixTree: allocation error\n");
         free(newEdge);
         freeRadixTreeRec(source);
-        printf("newRadixTree: allocation error\n");
         return NULL;
     }
 
@@ -252,7 +252,7 @@ int setInsert(Set *radixTree, const char *key){
     // On stocke l'indice du dernier caractère du prefixe commun
     size_t prefixIndex = 0;
 
-    char *commonLabelPrefix = malloc(insertKeySize * sizeof(char) + 1);
+    char *commonLabelPrefix = malloc((insertKeySize + 1)* sizeof(char));
         if(!commonLabelPrefix){
         printf("setInsert: allocation error\n");
         return false;
@@ -262,26 +262,32 @@ int setInsert(Set *radixTree, const char *key){
 
     while(n != NULL){
 
-        char *commonKeyPrefix = malloc(insertKeySize * sizeof(char) + 1);
+        prev = n;
+
+        char *commonKeyPrefix = malloc((insertKeySize + 1)* sizeof(char));
         if(!commonKeyPrefix){
             printf("setInsert: allocation error\n");
             freeRadixTreeRec(n);
             return false;
         }
+        
 
         LNode *current = n->edges->head;
 
         while(current != NULL){
             Edge *edge = (Edge *)current->value;
             size_t labelSize = strlen(edge->label);
-            printf("%s\n", edge->label);
             count = 0;
 
-            while(key[count] != '\0' && key[prefixIndex] == edge->label[count] && count < labelSize){
+            while(key[0] == edge->label[0] && key[count] != '\0' && key[prefixIndex] == edge->label[count] && count < labelSize){
                 commonLabelPrefix[prefixIndex] = key[count];
                 count++;
                 prefixIndex++;
             }
+
+            printf("%s %ld\n", commonLabelPrefix, count);
+
+            //printf("(%s, %s) %ld\n", key, edge->label, count);
 
             // Le préfixe n'a été trouvé dans aucune arêtes
             if(count == 0){
@@ -308,7 +314,7 @@ int setInsert(Set *radixTree, const char *key){
             }
             
             //Le prefixe de la clé est trouvé dans une des arêtes (par exemple on a trouvé le préfixe "te" pour tea)
-            if(count > 0 && count < labelSize){
+            if(count > 0 && count <= labelSize){
                 //Dans ce cas, on avance
                 n = edge->targetNode;
                 break;
@@ -329,78 +335,132 @@ int setInsert(Set *radixTree, const char *key){
                 count++;
             }
 
-            if(radixTree->root->key != NULL){
 
-                printf("non\n");
+            if(count == 0){
 
-                if(count == 0){
+                // Noeud intérmediaire (sans clé)
+                RNode *intermediate = newRadixTree(NULL);
+                if(!intermediate){
+                    printf("setInsert: allocation error\n");
+                    free(commonLabelPrefix);
+                    return false;
+                }
+            
+                Edge *newEdge1 = createEdge(intermediate, n, n->key);
+                if(!newEdge1){
+                    printf("setInsert: error while creating a new edge\n");
+                    freeRadixTreeRec(n);
+                    return false;
+                }
 
-                    // Noeud intérmediaire (sans clé)
-                    RNode *intermediate = newRadixTree(NULL);
-                    if(!intermediate){
-                        printf("setInsert: allocation error\n");
-                        free(commonLabelPrefix);
+                RNode *newNode = newRadixTree(key);
+                if(!newNode){
+                    printf("setInsert: error while creating a new node\n");
+                    freeRadixTreeRec(n);
+                    return false;
+                }
+
+                Edge *newEdge2 = createEdge(intermediate, newNode, key);
+                if(!newEdge2){
+                    printf("setInsert: error while creating a new edge\n");
+                    freeRadixTreeRec(n);
+                    return false;
+                }
+
+                // On ajoute le noeud intermediaire sans clé + un noeud avec la nouvelle clé
+                radixTree->size += 2;
+
+                radixTree->root = intermediate;
+
+                return true;
+            }
+
+            if(count > 0){
+                if(count >= strlen(n->key)){
+                    RNode *newNode = newRadixTree(key);
+                    if(!newNode){
+                        printf("setInsert: error in creation of new node\n");
+                        freeRadixTreeRec(n);
                         return false;
                     }
-                
-                    Edge *newEdge1 = createEdge(intermediate, n, n->key);
+
+                    Edge *newEdge = createEdge(n, newNode, key + count);
+                    if(!newEdge){
+                        return false;
+                    }
+
+                    radixTree->size++;
+                    n = newEdge->targetNode;
+
+                }
+
+                else{
+                    char *temp = malloc((strlen(n->key) + 1)* sizeof(char));
+                    if(!temp){
+                    printf("setInsert: allocation error\n");
+                    return false;
+                    }
+
+                    strcpy(temp, n->key);
+
+                    n->key = NULL;
+
+                    RNode *newNode1 = newRadixTree(temp);
+                    if(!newNode1){
+                        printf("setInsert: error while creating a new node\n");
+                        freeRadixTreeRec(n);
+                        return false;
+                    }
+
+                    RNode *newNode2 = newRadixTree(key);
+                    if(!newNode2){
+                        printf("setInsert: error while creating a new node\n");
+                        freeRadixTreeRec(n);
+                        return false;
+                    }
+
+                    Edge *newEdge1 = createEdge(n, newNode1, temp + count);
                     if(!newEdge1){
                         printf("setInsert: error while creating a new edge\n");
                         freeRadixTreeRec(n);
                         return false;
                     }
 
-                    RNode *newNode = newRadixTree(key);
-                    if(!newNode){
-                        printf("setInsert: error while creating a new node\n");
-                        freeRadixTreeRec(n);
-                        return false;
-                    }
-
-                    Edge *newEdge2 = createEdge(intermediate, newNode, key);
+                    Edge *newEdge2 = createEdge(n, newNode2, key + count);
                     if(!newEdge2){
                         printf("setInsert: error while creating a new edge\n");
                         freeRadixTreeRec(n);
                         return false;
                     }
+                    if(current != NULL){
+                        Edge *e = (Edge *)current->value;
+
+                        strcpy(e->label, commonLabelPrefix);
+                    }
 
                     // On ajoute le noeud intermediaire sans clé + un noeud avec la nouvelle clé
                     radixTree->size += 2;
 
-                    radixTree->root = intermediate;
-
                     return true;
-                }
-
-                if(count > 0){
-                    if(count >= strlen(n->key)){
-                        RNode *newNode = newRadixTree(key);
-                        if(!newNode){
-                            printf("setInsert: error in creation of new node\n");
-                            freeRadixTreeRec(n);
-                            return false;
-                        }
-
-                        Edge *newEdge = createEdge(n, newNode, key + count);
-                        if(!newEdge){
-                            return false;
-                        }
-
-                        radixTree->size++;
-                        n = newEdge->targetNode;
-
-                    }
-
-                    else{
-                        // TODO
-                    }
                 }
             }
         }
 
-        break;
+        else{
+            if(current != NULL){
+                Edge *e = (Edge *)current->value;
+
+                printf("%s\n", e->label);
+
+                n = e->targetNode;
+            }
+            continue;
+        }
+
+        return true;
     }
 
+    free(commonLabelPrefix);
     return true;
 }
 
