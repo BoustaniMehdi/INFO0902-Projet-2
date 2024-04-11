@@ -19,12 +19,11 @@ int main() {
     
 
     // Ajouter des éléments à l'ensemble
-    const char *keys[] = {"team", "boat", "test"};
+    const char *keys[] = {"team", "test", "boat", "tea"};
     for (size_t i = 0; i < sizeof(keys) / sizeof(keys[0]); ++i) {
         // Vérifier si l'élément est déjà présent dans l'ensemble
         if (!setContains(mySet, keys[i])) {
             // Si l'élément n'est pas présent, l'ajouter
-            // Notez que vous devez implémenter cette fonction
             setInsert(mySet, keys[i]);
             printf("Ajout de l'élément \"%s\" à l'ensemble.\n", keys[i]);
         } else {
