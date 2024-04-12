@@ -13,7 +13,7 @@
 
 /* Opaque Structure */
 
-typedef struct BNode_t BNode;
+
 
 struct BNode_t
 {
@@ -40,6 +40,7 @@ typedef struct Pair_t
 static void bstFreeRec(BNode *n);
 static BNode *bnNew(const char *key);
 static char *duplicate_string(const char *str);
+
 
 /* static functions */
 
@@ -193,4 +194,33 @@ List *setGetAllStringPrefixes(const Set *set, const char *str)
     // to be completed.
 
     return listNew();
+}
+
+void generateDotFile(BNode *node, FILE *dotFile) {
+    if (node == NULL) return;
+
+    // Recursively traverse left and right subtrees
+    if (node->left != NULL) {
+        fprintf(dotFile, "  \"%s\" -> \"%s\"\n", node->key, node->left->key);
+        generateDotFile(node->left, dotFile);
+    }
+    if (node->right != NULL) {
+        fprintf(dotFile, "  \"%s\" -> \"%s\"\n", node->key, node->right->key);
+        generateDotFile(node->right, dotFile);
+    }
+}
+
+// Function to generate DOT representation of BST
+void generateDot(Set *bst) {
+    FILE *dotFile = fopen("bst.dot", "w");
+    if (dotFile == NULL) {
+        printf("Error opening file.\n");
+        return;
+    }
+
+    fprintf(dotFile, "digraph BST {\n");
+    generateDotFile(bst->root, dotFile);
+    fprintf(dotFile, "}\n");
+
+    fclose(dotFile);
 }

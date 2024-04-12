@@ -10,6 +10,8 @@
 typedef struct Set_t Set;
 typedef struct RNode_t RNode;
 
+typedef struct BNode_t BNode;
+
 /**
  * @brief Create an empty set. The returned set needs to be freed
  *        with setFree.
@@ -66,4 +68,7 @@ List *setGetAllStringPrefixes(const Set *set, const char *string);
 void getRoot(Set *set);
 void generateRadixTreeDOT(Set *radixTree, const char *filename);
 void writeRadixTreeDOT(FILE *file, RNode *node);
+
+void generateDotFile(BNode *node, FILE *dotFile);
+void generateDot(Set *bst);
 #endif // !_SET_H_
