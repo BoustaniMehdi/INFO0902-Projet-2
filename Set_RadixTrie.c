@@ -35,7 +35,6 @@ struct Edge_t
 
 static RNode *newRadixTree(const char *key);
 static void freeRadixTreeRec(RNode *n);
-static int minString(const char *s1, const char *s2);
 static Edge *createEdge(RNode *source, RNode *destination, const char* label);
 
 static Edge *createEdge(RNode *source, RNode *destination, const char* label){
@@ -63,9 +62,7 @@ static Edge *createEdge(RNode *source, RNode *destination, const char* label){
     listInsertLast(source->edges, newEdge);
 
     return newEdge;
-    
 }
-
 
 /**
  * @brief Create a new tree node with its associated key.
@@ -168,55 +165,88 @@ size_t setNbKeys(const Set *radixTree){
     return radixTree->size;
 }//end setNbKeys
 
-static int minString(const char *s1, const char *s2){
-    assert(s1 != NULL && s2 != NULL);
-
-    int s1size = strlen(s1);
-    int s2size = strlen(s2);
-
-    return (s1size <= s2size) ? s1size: s2size;
-}
-
 bool setContains(const Set *radixTree, const char *key){
     assert(radixTree != NULL && key != NULL);
 
     RNode *n = radixTree->root;
+
     size_t count = 0;
     size_t labelSize;
 
+    size_t keySize = strlen(key);
+
+    // Chaîne de caractères utilisée pour stocker la clé à chercher et lui apporter des modifications (la couper par exemple)
+    char *tempKey = malloc((keySize + 1)* sizeof(char));
+    if(!tempKey){
+        printf("setInsert: allocation error\n");
+        return false;
+    }
+
+    strcpy(tempKey, key);
+
     while(n != NULL){
 
-        if(n->key != NULL && strcmp(key, n->key) == 0){
+        if(n->key && strcmp(key, n->key) == 0)
             return true;
-        }
 
+        // Arête courante
         LNode *current = n->edges->head;
 
         while(current != NULL){
             Edge *edge = (Edge *)current->value;
-            count = 0;
-            labelSize = strlen(edge->label);
+            size_t labelSize = strlen(edge->label);
 
-            for(size_t j = 0; j < labelSize && key[j] != '\0'; j++){
-                if(key[j] == edge->label[j]){
-                    count++;
-                }
-                else{
-                    break;
-                }
+            count = 0;
+            
+            // On compare la clé à insérer aux arêtes de l'arbre (search) 
+            while(tempKey[0] == edge->label[0] && tempKey[count] != '\0' && tempKey[count] == edge->label[count]){
+                count++;
             }
 
-            if(count == labelSize){
+            // Le préfixe n'a été trouvé dans aucune arêtes
+            if(count == 0){
+                // Le noeud n'a plus d'arête à vérifier, la clé n'est pas présente
+                if(current->next == NULL)
+                    return false;
+
+                // On passe à l'arête suivante s'il y en a
+                else{
+                    current = current->next;
+                    continue;
+                }
+            }
+            
+            // Le prefixe de la clé est trouvé dans une des arêtes (par exemple on a trouvé le préfixe "te" pour tea)
+            else if(count > 0 && count <= labelSize){
+                //On passe au noeud suivant
                 n = edge->targetNode;
+
+                // Nous gardons que la clé à insérer sans son préfixe déjà trouvé
+                tempKey += count;
+
+                // On break pour revenir à la boucle de départ pour ensuite répéter le processus (récursif)
                 break;
             }
 
-            current = current->next;
+            else{
+                return true;
+            }
         }
 
-        if(count != labelSize){
-            break;
+        if(n->key && strcmp(key, n->key) == 0)
+            return true;
+
+        else{
+            if(current){
+                Edge *e = (Edge *)current->value;
+                n = e->targetNode;
+            }
+            continue;
         }
+
+        free(tempKey);
+
+        return false;
             
     }
 
@@ -228,9 +258,8 @@ int setInsert(Set *radixTree, const char *key){
     assert(radixTree != NULL && key != NULL);
 
     // La clé insérée est vide
-    if(!strcmp(key, "")){
+    if(!strcmp(key, ""))
         return false;
-    }
 
     // Si l'arbre est vide, on crée un noeud (racine) seul
     if(!radixTree->root){
@@ -259,7 +288,7 @@ int setInsert(Set *radixTree, const char *key){
 
     // Chaîne de caractères utilisée pour stocker la clé à insérer et lui apporter des modifications
     char *tempKey = malloc((keySize + 1)* sizeof(char));
-        if(!key){
+    if(!tempKey){
         printf("setInsert: allocation error\n");
         return false;
     }
