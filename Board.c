@@ -255,13 +255,124 @@ void boardDisplay(Board *board)
     }
 }
 
+
+
 /* Student code starts here */
+
+
+// ------------------------------------------------------ STUDENT CODE ----------------------------------------------------- //
+
+
+bool isInBoard(int r, int c, int size){
+    return r >= 0 && r < size
+        && c >= 0 && c < size;
+}
+
+// GETS THE WORD FORMING A LINE ON THE GRID: HORIZONTAL, VERTICAL, DIAGONAL 
+static bool *getWord(Board *board, char *word, int r, int c, int incr, int incc){
+    int i = 0;
+    int sr = r;
+    int sc = c;
+    size_t n = board->size;
+    if (isInBoard(sr + incr, sc + incc, n)){
+
+        word[i] = board->grid[sr][sc];
+        while (isInBoard(sr + incr, sc + incc, n)){
+        
+            sr += incr;
+            sc += incc;
+            i++;
+            word[i] = board->grid[sr][sc];
+        }
+        word[i+1] = '\0';
+        return true;
+    }
+    return false;
+}
+
+// ADDS A FOUND WORD IN SET TO OUR LIST 
+static void addFoundWords(Board *board, Set* set, Set* filledSet, List* wordsList, int r, int c, int incr, int incc){
+    size_t n = board->size;
+    char *word = malloc((sizeof(char) * n + 1));
+    if (!word){
+        printf("Failed to allocate memory for word\n");
+        exit(1);
+    }
+   
+    if (getWord(board, word, r, c, incr, incc)){
+
+        List *foundPrefixes = setGetAllStringPrefixes(set, word);
+        if (!foundPrefixes){
+            printf("Failed to get prefixes of the word %s\n", word);
+            exit(1);
+        }
+        for (LNode *p = foundPrefixes->head; p != NULL; p = p->next){
+
+            if (!setContains(filledSet, p->value)){
+                char *copy = malloc(sizeof(char) * strlen(p->value) + 1);
+
+                memcpy(copy, p->value, strlen(p->value) + 1);
+                listInsertLast(wordsList, copy);
+                setInsert(filledSet, copy);
+            }
+        }
+
+        listFree(foundPrefixes, true);
+    }
+    free(word);    
+}
 
 List *boardGetAllWordsFromSet(Board *board, Set *set)
 {
-    // To be completed. This function should call setGetAllStringPrefixes.
+    Set *filledSet = setCreateEmpty(); // for duplicates
+    if (!filledSet){
+        printf("Failed to get words from set\n");
+        return NULL;
+    }
 
-    return listNew();
+    List *wordsList = listNew(); // contains found words in the grid
+    if (!wordsList){
+        printf("Failed to get words from set\n");
+        setFree(filledSet);
+        return NULL;
+    }
+
+    size_t n = board->size;
+    for (int i = 0; i < n; i++){
+        for (int j = 0; j < n; j++){
+           
+            
+            addFoundWords(board, set, filledSet, wordsList, i, j, 0, 1);
+            
+            addFoundWords(board, set, filledSet, wordsList, i, j, 0, -1);
+             
+            addFoundWords(board, set, filledSet, wordsList, i, j, -1, 0);
+            
+            addFoundWords(board, set, filledSet, wordsList, i, j, 1, 0);
+
+            addFoundWords(board, set, filledSet, wordsList, i, j, -1, 1);
+
+            addFoundWords(board, set, filledSet, wordsList, i, j, 1, -1);
+
+            addFoundWords(board, set, filledSet, wordsList, i, j, -1, -1);
+
+            addFoundWords(board, set, filledSet, wordsList, i, j, 1, 1);
+             
+           
+        }
+        
+    }
+    setFree(filledSet);
+
+    return wordsList;
 }
+
+
+// List *boardGetAllWordsFromSet(Board *board, Set *set)
+// {
+//     // To be completed. This function should call setGetAllStringPrefixes.
+
+//     return listNew();
+// }
 
 
