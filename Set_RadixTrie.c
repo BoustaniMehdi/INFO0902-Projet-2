@@ -227,31 +227,37 @@ bool setContains(const Set *radixTree, const char *key){
 int setInsert(Set *radixTree, const char *key){
     assert(radixTree != NULL && key != NULL);
 
+    // La clé insérée est vide
     if(!strcmp(key, "")){
         return false;
     }
 
-    // Arbre vide
-    if (radixTree->root == NULL)
-    {
+    // Si l'arbre est vide, on crée un noeud (racine) seul
+    if(!radixTree->root){
+        
         radixTree->root = newRadixTree(key);
-        if (radixTree->root == NULL)
-        {
+
+        if(!radixTree->root){
             printf("setInsert: error while creating the tree\n");
             return false;
         }
+
         radixTree->size++;
         radixTree->root->edgesNumbers = 0;
 
         return true;
     }
 
+    // On commence à la racine de l'arbre
     RNode *n = radixTree->root;
 
     size_t keySize = strlen(key);
+
+    // Compteur pour rechercher la clé dans l'arbre et le modifier en conséquence
     size_t count1 = 0;
     size_t count2 = 0;
 
+    // Chaîne de caractères utilisée pour stocker la clé à insérer et lui apporter des modifications
     char *tempKey = malloc((keySize + 1)* sizeof(char));
         if(!key){
         printf("setInsert: allocation error\n");
@@ -260,12 +266,14 @@ int setInsert(Set *radixTree, const char *key){
 
     strcpy(tempKey, key);
 
+    // Noeud rencontré précedemment
     RNode *prev = NULL;
 
     while(n != NULL){
 
         prev = n;
 
+        // Chaîne de caractères permettant de stocker le préfixe commun (label-clé ou clé-clé)
         char *commonKeyPrefix = malloc((keySize + 1)* sizeof(char));
         if(!commonKeyPrefix){
             printf("setInsert: allocation error\n");
@@ -273,7 +281,10 @@ int setInsert(Set *radixTree, const char *key){
             return false;
         }
 
+        // Arête courante
         LNode *current = n->edges->head;
+
+        // Arête rencontrée précedemment
         LNode *prevLabel = NULL;
 
         while(current != NULL){
@@ -283,6 +294,7 @@ int setInsert(Set *radixTree, const char *key){
             count1 = 0;
             prevLabel = current;
             
+            // On compare la clé à insérer aux arêtes de l'arbre (search) 
             while(tempKey[0] == edge->label[0] && tempKey[count1] != '\0' && tempKey[count1] == edge->label[count1]){
                 commonKeyPrefix[count1] = key[count1];
                 count1++;
@@ -290,11 +302,9 @@ int setInsert(Set *radixTree, const char *key){
 
             commonKeyPrefix[count1] = '\0';
 
-            //printf("%s\n", edge->label);
-
             // Le préfixe n'a été trouvé dans aucune arêtes
             if(count1 == 0){
-                //Le noeud n'a plus d'arête à vérifier, on crée un nouveau noeud
+                // Le noeud n'a plus d'arête à vérifier, on crée un nouveau noeud
                 if(current->next == NULL){ 
                     RNode *newNode = newRadixTree(key);
                     if(!newNode){
@@ -315,20 +325,20 @@ int setInsert(Set *radixTree, const char *key){
                     return true;
                 }
 
-                //On passe à l'arête suivante
+                // On passe à l'arête suivante s'il y en a
                 else{
                     current = current->next;
                     continue;
                 }
             }
             
-            //Le prefixe de la clé est trouvé dans une des arêtes (par exemple on a trouvé le préfixe "te" pour tea)
+            // Le prefixe de la clé est trouvé dans une des arêtes (par exemple on a trouvé le préfixe "te" pour tea)
             else if(count1 > 0 && count1 <= labelSize){
                 Edge *e = (Edge *)current->value;
 
-                //Ici on gère le cas où on insert un noeud ayant la même clé qu'une arête et où le prochain noeud ne possède pas de clé. 
-                //Dans ce cas, on place la clé à insérer dans le noeud vide.
-                if(!strcmp(key, e->label) && e->targetNode->key == NULL)
+                // Ici on gère le cas où on insert un noeud ayant la même clé qu'une arête et où le prochain noeud ne possède pas de clé. 
+                // Dans ce cas, on place la clé à insérer dans le noeud vide.
+                if(!strcmp(tempKey, e->label) && e->targetNode->key == NULL)
                 {
                     //printf("%s, %s\n", key, e->label);
                     e->targetNode->key = malloc((keySize + 1)* sizeof(char));
@@ -343,10 +353,10 @@ int setInsert(Set *radixTree, const char *key){
                 //On passe au noeud suivant
                 n = edge->targetNode;
 
-                //Nous gardons que la clé à insérer sans son préfixe déjà trouvé
+                // Nous gardons que la clé à insérer sans son préfixe déjà trouvé
                 strcpy(tempKey, key + count1);
 
-                //On break pour revenir à la boucle de départ pour ensuite répéter le processus
+                // On break pour revenir à la boucle de départ pour ensuite répéter le processus (récursif)
                 break;
             }
 
@@ -356,16 +366,17 @@ int setInsert(Set *radixTree, const char *key){
             }
         } 
 
-        //On vérifie avant tout si le noeud courant n'est pas un noeud vide (intermediaire)
+        // On vérifie avant tout si le noeud courant n'est pas un noeud vide (intermediaire)
         if(n->key){
             if(strcmp(key, n->key) == 0){
                 printf("L'élement \"%s\" est déjà présent dans l'arbre\n", key);
                 return true;
             }
-            //On met le compteur de la taille du préfixe commun à 0
+
+            // On met le compteur de la taille du préfixe commun à 0
             count2 = 0;
 
-            //On vérifie si la clé à insérer et la clé du noeud actuel ont un préfixe en commun ou non
+            // On vérifie si la clé à insérer et la clé du noeud actuel ont un préfixe en commun ou non
             while(key[count2] != '\0' && key[count2] == n->key[count2] && count2 < keySize){
                 commonKeyPrefix[count2] = key[count2];
                 count2++;
@@ -374,14 +385,15 @@ int setInsert(Set *radixTree, const char *key){
             commonKeyPrefix[count2] = '\0';
 
             if(count2 == 0){
-                // Noeud intérmediaire (sans clé)
+                // Création du noeud vide (sans clé)
                 RNode *intermediate = newRadixTree(NULL);
                 if(!intermediate){
                     printf("setInsert: allocation error\n");
                     free(commonKeyPrefix);
                     return false;
                 }
-            
+
+                // On relie le noeud vide au noeud courant
                 Edge *newEdge1 = createEdge(intermediate, n, n->key);
                 if(!newEdge1){
                     printf("setInsert: error while creating a new edge\n");
@@ -389,6 +401,7 @@ int setInsert(Set *radixTree, const char *key){
                     return false;
                 }
 
+                // Création du nouveau noeud pour la clé à insérer
                 RNode *newNode = newRadixTree(key);
                 if(!newNode){
                     printf("setInsert: error while creating a new node\n");
@@ -396,6 +409,7 @@ int setInsert(Set *radixTree, const char *key){
                     return false;
                 }
 
+                // On relie le noeud vide au nouveau noeud
                 Edge *newEdge2 = createEdge(intermediate, newNode, key);
                 if(!newEdge2){
                     printf("setInsert: error while creating a new edge\n");
@@ -412,7 +426,7 @@ int setInsert(Set *radixTree, const char *key){
             }
 
             else{       
-                //Chaîne de caractères temporaire pour "couper" la clé à insérer
+                // Chaîne de caractères temporaire pour "couper" la clé à insérer
                 char *temp = malloc((strlen(n->key) + 1)* sizeof(char));
                 if(!temp){
                     printf("setInsert: allocation error\n");
@@ -424,10 +438,10 @@ int setInsert(Set *radixTree, const char *key){
 
                 // Si la clé à insérer est le préfixe d'une clé de l'arbre, on n'a pas besoin de noeud supplémentaire (exemple: tea -> team)
                 if(strcmp(commonKeyPrefix, key) == 0){  
-
+                    // On récupère l'arête courante
                     Edge *e = (Edge *)current->value;
 
-                    //On crée le noeud contenant la clé à insérer
+                    // On crée le noeud contenant la clé à insérer
                     RNode *newNode1 = newRadixTree(key);
                     if(!newNode1){
                         printf("setInsert: error while creating a new node\n");
@@ -435,13 +449,13 @@ int setInsert(Set *radixTree, const char *key){
                         return false;
                     }
 
-                    //Le noeud courant va maintenant pointer vers le nouveau noeud
+                    // Le noeud courant va maintenant pointer vers le nouveau noeud
                     e->targetNode = newNode1;
 
-                    //Le label correspond au préfice commun
+                    // Le label de l'arête courante correspond au préfice commun
                     strcpy(e->label, commonKeyPrefix);
 
-                    //On relie le nouveau noeud au noeud courant 
+                    // On relie le nouveau noeud au noeud courant 
                     Edge *newEdge2 = createEdge(newNode1, n, temp + count2);
                     if(!newEdge2){
                         printf("setInsert: error while creating a new edge\n");
@@ -457,8 +471,8 @@ int setInsert(Set *radixTree, const char *key){
                     }
                 }
 
+                // La clé courante est un préfixe de la clé à insérer
                 else if(count2 >= strlen(n->key)){
-                    //printf("%s\n", key);
 
                     // Si le noeud courant possède des arêtes, il faut d'abord vérifier si une de ses arêtes n'est pas
                     // de nouveau un prefixe de la clé à insérer sans ses premiers caractères (tempKey) 
@@ -491,13 +505,17 @@ int setInsert(Set *radixTree, const char *key){
                 }
 
                 else{
+                    // Le noeud courant devient un noeud vide (sans clé)
                     n->key = NULL;
 
-                    // printf("%s\n", key);
+                    // Si ce noeud a un prédécesseur, 
                     if(prevLabel){
                         Edge *e = (Edge *)prevLabel->value;
 
-                        strcpy(e->label, commonKeyPrefix + count1);
+                        if(prev->key == NULL)
+                            strcpy(e->label, commonKeyPrefix + count1 - 1);
+                        else
+                            strcpy(e->label, commonKeyPrefix);
                     }
 
                     RNode *newNode1 = newRadixTree(temp);
@@ -530,7 +548,6 @@ int setInsert(Set *radixTree, const char *key){
                 }
 
                 if(radixTree->size == 1){
-                    //printf("%s\n", key);
                     // Noeud intérmediaire (sans clé)
                     RNode *intermediate = newRadixTree(NULL);
                     if(!intermediate){
@@ -561,8 +578,8 @@ int setInsert(Set *radixTree, const char *key){
             }
         }
 
+        // Si la clé vaut NULL (i.e le neoud est vide), on regarde s'il a bien des arêtes et si oui on passe à son successeur
         else{
-            //printf("%s\n", key);
             if(current){
                 Edge *e = (Edge *)current->value;
 
@@ -572,6 +589,7 @@ int setInsert(Set *radixTree, const char *key){
         }
 
         free(tempKey);
+
         return true;
     }
 }
@@ -594,7 +612,8 @@ void writeRadixTreeDOT(FILE *file, RNode *node) {
         return;
 
     // Écrire le nœud
-    fprintf(file, "\t\"%p\" [label=\"%s\"];\n", (void *)node, node->key ? node->key : "NULL");
+    fprintf(file, "\t\"%p\" [label=\"%s\"];\n", (void *)node, node->key ? node->key : "");
+
 
     // Parcourir toutes les arêtes sortantes du nœud
     LNode *current = node->edges->head;
