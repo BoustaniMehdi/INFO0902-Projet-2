@@ -263,12 +263,29 @@ void boardDisplay(Board *board)
 // ------------------------------------------------------ STUDENT CODE ----------------------------------------------------- //
 
 
-bool isInBoard(int r, int c, int size){
+/**
+ * @brief Duplicate a string
+ * ADOPTED FROM  SET_BST.c
+ *
+ * @param str
+ * @return char*
+ */
+static char *duplicate_string(const char *str)
+{
+    char *copy = malloc(strlen(str) + 1);
+    if (!copy)
+        return NULL;
+    memcpy(copy, str, strlen(str) + 1);
+    return copy;
+}
+
+
+static bool isInBoard(int r, int c, int size){
     return r >= 0 && r < size
         && c >= 0 && c < size;
 }
 
-// GETS THE WORD FORMING A LINE ON THE GRID: HORIZONTAL, VERTICAL, DIAGONAL 
+// GETS THE WORD FORMING A LINE ON THE GRID: HORIZONTAL, VERTICAL, DIAGONAL
 static bool *getWord(Board *board, char *word, int r, int c, int incr, int incc){
     int i = 0;
     int sr = r;
@@ -278,7 +295,7 @@ static bool *getWord(Board *board, char *word, int r, int c, int incr, int incc)
 
         word[i] = board->grid[sr][sc];
         while (isInBoard(sr + incr, sc + incc, n)){
-        
+
             sr += incr;
             sc += incc;
             i++;
@@ -290,7 +307,7 @@ static bool *getWord(Board *board, char *word, int r, int c, int incr, int incc)
     return false;
 }
 
-// ADDS A FOUND WORD IN SET TO OUR LIST 
+// ADDS A FOUND WORD IN SET TO OUR LIST
 static void addFoundWords(Board *board, Set* set, Set* filledSet, List* wordsList, int r, int c, int incr, int incc){
     size_t n = board->size;
     char *word = malloc((sizeof(char) * n + 1));
@@ -298,29 +315,32 @@ static void addFoundWords(Board *board, Set* set, Set* filledSet, List* wordsLis
         printf("Failed to allocate memory for word\n");
         exit(1);
     }
-   
-    if (getWord(board, word, r, c, incr, incc)){
 
+    if (getWord(board, word, r, c, incr, incc)){
         List *foundPrefixes = setGetAllStringPrefixes(set, word);
+
         if (!foundPrefixes){
             printf("Failed to get prefixes of the word %s\n", word);
             exit(1);
         }
         for (LNode *p = foundPrefixes->head; p != NULL; p = p->next){
 
-            if (!setContains(filledSet, p->value)){
-                char *copy = malloc(sizeof(char) * strlen(p->value) + 1);
+            char *copy = duplicate_string(p->value);
 
-                memcpy(copy, p->value, strlen(p->value) + 1);
-                listInsertLast(wordsList, copy);
-                setInsert(filledSet, copy);
+            if (setInsert(filledSet, copy) == 1){
+                if (!listInsertLast(wordsList, copy)){
+                    printf("Failed to add matching word to list\n");
+                    exit(1);
+                }
             }
         }
 
         listFree(foundPrefixes, true);
     }
-    free(word);    
+    free(word);
 }
+
+
 
 List *boardGetAllWordsFromSet(Board *board, Set *set)
 {
@@ -338,16 +358,16 @@ List *boardGetAllWordsFromSet(Board *board, Set *set)
     }
 
     size_t n = board->size;
-    for (int i = 0; i < n; i++){
-        for (int j = 0; j < n; j++){
-           
-            
+    for (size_t i = 0; i < n; i++){
+        for (size_t j = 0; j < n; j++){
+
+
             addFoundWords(board, set, filledSet, wordsList, i, j, 0, 1);
-            
+
             addFoundWords(board, set, filledSet, wordsList, i, j, 0, -1);
-             
+
             addFoundWords(board, set, filledSet, wordsList, i, j, -1, 0);
-            
+
             addFoundWords(board, set, filledSet, wordsList, i, j, 1, 0);
 
             addFoundWords(board, set, filledSet, wordsList, i, j, -1, 1);
@@ -357,22 +377,12 @@ List *boardGetAllWordsFromSet(Board *board, Set *set)
             addFoundWords(board, set, filledSet, wordsList, i, j, -1, -1);
 
             addFoundWords(board, set, filledSet, wordsList, i, j, 1, 1);
-             
-           
+
+
         }
-        
+
     }
     setFree(filledSet);
 
     return wordsList;
 }
-
-
-// List *boardGetAllWordsFromSet(Board *board, Set *set)
-// {
-//     // To be completed. This function should call setGetAllStringPrefixes.
-
-//     return listNew();
-// }
-
-

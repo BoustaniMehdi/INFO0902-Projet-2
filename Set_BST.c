@@ -187,41 +187,40 @@ bool setContains(const Set *bst, const char *key)
     return false;
 }
 
-/* student code starts here */
 
+/* student code starts here */
 
 // ------------------------------------------------------ ABDELKADER CODE ----------------------------------------------------- //
 
-#define MINSIZE 2 // minimum size of a word 
+#define MINSIZE 2 // minimum size of a word
 
 static int isPrefix(const char *word, const char *prefix) {
-    
+
     // Use strncmp to compare the first strlen(prefix) characters of word with prefix
     return strncmp(word, prefix, strlen(prefix)) == 0;
 }
 
 static void fillPrefixes(List *l, const char *str, BNode *n, char *wordMin){
     if (n != NULL){
-    
-        if (isPrefix(str, n->key)){
-            char *copy = malloc(sizeof(char) * strlen(n->key) + 1);
-            memcpy(copy, n->key, strlen(n->key) + 1);
 
-            if (!listInsertLast(l, copy)){
+        if (isPrefix(str, n->key)){
+
+          if (!listInsertLast(l, duplicate_string(n->key))){
                 printf("Failed to fill prefixes into list\n");
                 return;
             }
+
             int cmp1 = strcmp(n->key, wordMin);
             int cmp2 = strcmp(n->key, str);
 
             if (cmp1 == 0 && cmp2 == 0){ // we only have 1 prefix
                 return;
             }
-            
+
             else if (cmp1 == 0 || cmp2 == 0){
                 if (cmp1 == 0)
                     fillPrefixes(l, str, n->right, wordMin);
-                
+
                 else if (cmp2 == 0)
                     fillPrefixes(l, str, n->left, wordMin);
             }
@@ -233,13 +232,13 @@ static void fillPrefixes(List *l, const char *str, BNode *n, char *wordMin){
         }
 
         else {
-            
+
             int cmp1 = strcmp(n->key, wordMin);
             int cmp2 = strcmp(n->key, str);
 
             if (cmp2 > 0)
                 fillPrefixes(l, str, n->left, wordMin);
-            
+
             else {
                 if (cmp1 <= 0)
                     fillPrefixes(l, str, n->right, wordMin);
@@ -281,65 +280,7 @@ List *setGetAllStringPrefixes(const Set *set, const char *str)
    return prefixList;
 }
 
-// // ------------------------------- USING Contains for every prefix -------------------------------- //
-// static List *getPrefixes(const char *word){
-//     List *l = listNew();
-//     if (!l){
-//         exit(1);
-//     }
-//     // char prefix[strlen(word) + 1];
-
-//     char *prefix = malloc((strlen(word)) * sizeof(char) + 1);
-    
-//     // for (int i = 1; i < strlen(word) + 1; i++){
-//     for (int i = 1; i <= strlen(word); i++){
-//         for (int j = 0; j < i; j++){
-//             prefix[j] = word[j];
-//         }
-//         prefix[i] = '\0';
-//         // printf("%s\n", prefix);
-//         char *copy = malloc(strlen(prefix) + 1);
-//         if (!copy){
-//             exit(1);
-//         }
-//         memcpy(copy, prefix, strlen(prefix) + 1);
-//         // printf("%s %s\n", prefix, copy);
-//         listInsertFirst(l, copy);
-//     }
-//     // free(prefix);
-//     return l;
-// }
-
-// List *setGetAllStringPrefixes(const Set *set, const char *str)
-// {   
-//     List *prefixesList = getPrefixes(str);
-
-//     List *lastList = listNew();
-//     for (LNode *p = prefixesList->head; p != NULL; p = p->next){
-//         if (setContains(set, (char*) (p->value))){
-//             char *copy = malloc(strlen((char*) (p->value)) + 1);
-//             if (!copy){
-//                 exit(1);
-//             }
-//             memcpy(copy, (char*) (p->value), strlen((char*) (p->value)) + 1);
-//             listInsertLast(lastList, copy);
-//         }
-//     }
-
-//    return lastList;
-// }
-
 // ---------------------------------------------------- END --------------------------------------------------- //
-
-List *setGetAllStringPrefixes(const Set *set, const char *str)
-{
-    // to be completed.
-
-    return listNew();
-}
-
-
-
 
 
 void generateDotFile(BNode *node, FILE *dotFile) {
@@ -370,4 +311,3 @@ void generateDot(Set *bst) {
 
     fclose(dotFile);
 }
-
