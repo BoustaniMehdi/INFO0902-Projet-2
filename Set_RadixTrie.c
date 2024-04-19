@@ -387,7 +387,7 @@ int setInsert(Set *radixTree, const char *key){
             }
 
             else{
-                printf("L'élement \"%s\" est déjà présent dans l'arbre\n", key);
+                // printf("L'élement \"%s\" est déjà présent dans l'arbre\n", key);
                 return true;
             }
         } 
@@ -395,7 +395,7 @@ int setInsert(Set *radixTree, const char *key){
         // On vérifie avant tout si le noeud courant n'est pas un noeud vide (intermediaire)
         if(n->key){
             if(strcmp(key, n->key) == 0){
-                printf("L'élement \"%s\" est déjà présent dans l'arbre\n", key);
+                // printf("L'élement \"%s\" est déjà présent dans l'arbre\n", key);
                 return true;
             }
 
@@ -412,7 +412,7 @@ int setInsert(Set *radixTree, const char *key){
             
             
             if(strcmp(commonKeyPrefix, key) == 0){
-                printf("L'élement \"%s\" est déjà présent dans l'arbre\n", key);
+                // printf("L'élement \"%s\" est déjà présent dans l'arbre\n", key);
                 return true;
             }
 
@@ -713,6 +713,54 @@ int setInsert(Set *radixTree, const char *key){
         }   
     }
 }
+
+/**
+ * @brief Duplicate a string
+ *
+ * @param str
+ * @return char*
+ */
+static char *duplicate_string(const char *str)
+{
+    char *copy = malloc(strlen(str) + 1);
+    if (!copy)
+        return NULL;
+    memcpy(copy, str, strlen(str) + 1);
+    return copy;
+}
+
+
+List *setGetAllStringPrefixes(const Set *set, const char *str)
+{
+   List *prefixList = listNew();
+   if (!prefixList){
+    printf("Failed to get all prefixes\n");
+    return NULL;
+   }
+   size_t wordLength = strlen(str);
+
+   char *prefix = malloc(sizeof(char) * wordLength + 1 );
+   if (!prefix){
+    printf("Failed to allocate prefix \n");
+    listFree(prefixList, true);
+    return NULL;
+   }
+   
+
+   for (int i = 0; i < wordLength; i++){
+    prefix[i] = str[i];
+    prefix[i+1] = '\0';
+     printf("PREFIX = %s\n", prefix);
+    if (setContains(set, prefix)){
+       
+        listInsertLast(prefixList, duplicate_string(str));
+    }
+
+   }
+
+   return prefixList;
+}
+
 
 //-------------------------- FONCTIONS DE TESTS ---------------------------//
 

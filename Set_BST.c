@@ -255,6 +255,7 @@ static void fillPrefixes(List *l, const char *str, BNode *n, char *wordMin){
     return; // inutile
 }
 
+
 List *setGetAllStringPrefixes(const Set *set, const char *str)
 {
 

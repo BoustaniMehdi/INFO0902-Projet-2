@@ -50,6 +50,7 @@ static List *readLines(const char *filename)
     return lines;
 }
 
+
 int main(int argc, char **argv)
 {
     // Check arguments
