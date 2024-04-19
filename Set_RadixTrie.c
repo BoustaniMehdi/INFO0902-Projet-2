@@ -374,6 +374,8 @@ int setInsert(Set *radixTree, const char *key){
                     }
 
                     strcpy(edge->targetNode->key, key);
+
+                    return true;
                 }
                 
                 //On passe au noeud suivant
@@ -409,12 +411,6 @@ int setInsert(Set *radixTree, const char *key){
             }
 
             commonKeyPrefix[count2] = '\0';
-            
-            
-            if(strcmp(commonKeyPrefix, key) == 0){
-                // printf("L'élement \"%s\" est déjà présent dans l'arbre\n", key);
-                return true;
-            }
 
             if(count2 == 0){
                 // Création du noeud vide (sans clé)
