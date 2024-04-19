@@ -192,7 +192,7 @@ bool setContains(const Set *bst, const char *key)
 
 // ------------------------------------------------------ ABDELKADER CODE ----------------------------------------------------- //
 
-#define MINSIZE 2 // minimum size of a word
+#define MINSIZE 1 // minimum size of a word
 
 static int isPrefix(const char *word, const char *prefix) {
 
@@ -269,8 +269,8 @@ List *setGetAllStringPrefixes(const Set *set, const char *str)
         fprintf(stderr, "Memory allocation failed for minimum prefix\n");
         exit(1);
     }
-    strncpy(wordMin, str, 2);
-    wordMin[2] = '\0';
+    strncpy(wordMin, str, MINSIZE);
+    wordMin[MINSIZE] = '\0';
 
    BNode *n = set->root;
    fillPrefixes(prefixList, str, n, wordMin);
