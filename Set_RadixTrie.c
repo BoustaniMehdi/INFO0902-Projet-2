@@ -206,8 +206,10 @@ bool setContains(const Set *radixTree, const char *key){
             // Le préfixe n'a été trouvé dans aucune arêtes
             if(count == 0){
                 // Le noeud n'a plus d'arête à vérifier, la clé n'est pas présente
-                if(current->next == NULL)
+                if(current->next == NULL){
+                    // printf("%s\n", n->key ? n->key: "null");
                     return false;
+                }
 
                 // On passe à l'arête suivante s'il y en a
                 else{
@@ -218,11 +220,20 @@ bool setContains(const Set *radixTree, const char *key){
             
             // Le prefixe de la clé est trouvé dans une des arêtes (par exemple on a trouvé le préfixe "te" pour tea)
             else if(count > 0 && count <= labelSize){
+
                 //On passe au noeud suivant
                 n = edge->targetNode;
 
+                if(n->key){
+                    // printf("%s\n", n->key ? n->key: "null");
+                    if(strcmp(n->key, key))
+                        return false;
+                }
+
                 // Nous gardons que la clé à insérer sans son préfixe déjà trouvé
                 tempKey += count;
+                
+                // printf("%s, %s\n", n->key ? n->key: "null", edge->label);
 
                 // On break pour revenir à la boucle de départ pour ensuite répéter le processus (récursif)
                 break;
