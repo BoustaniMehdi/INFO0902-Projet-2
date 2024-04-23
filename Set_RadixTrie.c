@@ -380,7 +380,7 @@ int setInsert(Set *radixTree, const char *key){
 
             else{
                 // printf("L'élement \"%s\" est déjà présent dans l'arbre\n", key);
-                return true;
+                return false;
             }
         } 
 
@@ -388,7 +388,7 @@ int setInsert(Set *radixTree, const char *key){
         if(n->key){
             if(strcmp(key, n->key) == 0){
                 // printf("L'élement \"%s\" est déjà présent dans l'arbre\n", key);
-                return true;
+                return false;
             }
 
             // On met le compteur de la taille du préfixe commun à 0
@@ -690,8 +690,6 @@ int setInsert(Set *radixTree, const char *key){
                     return true;
                 }   
             }
-            
-
             if(current){
                 Edge *e = (Edge *)current->value;
 
@@ -723,31 +721,28 @@ static char *duplicate_string(const char *str)
 
 List *setGetAllStringPrefixes(const Set *set, const char *str)
 {
-   List *prefixList = listNew();
-   if (!prefixList){
-    printf("Failed to get all prefixes\n");
-    return NULL;
-   }
-   size_t wordLength = strlen(str);
+    List *prefixList = listNew();
+    if (!prefixList){
+        printf("Failed to get all prefixes\n");
+        return NULL;
+    }
+    size_t wordLength = strlen(str);
 
-   char *prefix = malloc(sizeof(char) * wordLength + 1 );
-   if (!prefix){
-    printf("Failed to allocate prefix \n");
-    listFree(prefixList, true);
-    return NULL;
-   }
-   
-
-   for (size_t i = 0; i < wordLength; i++){
-    prefix[i] = str[i];
-    prefix[i+1] = '\0';
-     printf("PREFIX = %s\n", prefix);
-    if (setContains(set, prefix)){
-       
-        listInsertLast(prefixList, duplicate_string(str));
+    char *prefix = malloc(sizeof(char) * wordLength + 1 );
+    if (!prefix){
+        printf("Failed to allocate prefix \n");
+        listFree(prefixList, true);
+        return NULL;
     }
 
-   }
+    for(size_t i = 0; i < wordLength; i++){
+        prefix[i] = str[i];
+        prefix[i+1] = '\0';
+
+        if(setContains(set, prefix)){
+            listInsertLast(prefixList, duplicate_string(prefix));
+        }
+    }
 
    return prefixList;
 }
