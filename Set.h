@@ -68,7 +68,6 @@ int setInsert(Set *set, const char *key);
  */
 List *setGetAllStringPrefixes(const Set *set, const char *string);
 
-void getRoot(Set *set);
 void generateRadixTreeDOT(Set *radixTree, const char *filename);
 void writeRadixTreeDOT(FILE *file, RNode *node);
 
