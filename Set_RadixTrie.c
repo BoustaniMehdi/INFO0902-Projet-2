@@ -4,8 +4,6 @@
 #include <stdlib.h>
 
 
-#define MAXSIZE 50
-
 typedef struct RNode_t RNode;
 typedef struct Edge_t Edge;
 typedef struct EList_t EdgeList;
@@ -50,6 +48,41 @@ static char *duplicate_string(const char *str)
         return NULL;
     memcpy(copy, str, strlen(str) + 1);
     return copy;
+}
+
+/**
+ * @brief Terminate the program and display a message
+ *
+ * @param m
+ */
+static void terminate(char *m)
+{
+    fprintf(stderr, "%s\n", m);
+    exit(EXIT_FAILURE);
+}
+
+static void concatenate_string(char **str1, const char *str2){
+    size_t len1 = strlen(*str1);
+    size_t len2 = strlen(str2);
+    
+    *str1 = realloc(*str1, (len1 + len2 + 1) * sizeof(char));
+    if (!*str1){
+        terminate("Allocation Error : Failed to reallocate string\n");
+    }
+
+    strcat(*str1, str2);
+}
+
+static void copy_string(char **str1, const char *str2){
+    size_t len1 = strlen(*str1);
+    size_t len2 = strlen(str2);
+    
+    *str1 = realloc(*str1, (len1 + len2 +1) * sizeof(char));
+    if (!*str1){
+        terminate("Allocation Error : Failed to reallocate string\n");
+    }
+
+    strcpy(*str1, str2);
 }
 
 static void freeRec(RNode *n){
@@ -197,18 +230,18 @@ bool setContains(const Set *radix, const char *key){
     RNode *n = radix->root;
     Edge *e = NULL;
 
-    char *pref = malloc(sizeof(char) * (MAXSIZE + 1));
+    char *pref = duplicate_string(n->key);
     if (!pref){
         return NULL;
     }
-    pref[0] = '\0';
+    // pref[0] = '\0';
 
-    char *tmp = malloc(sizeof(char) * (MAXSIZE + 1));
+    char *tmp = duplicate_string(n->key);
     if (!tmp){
         free(pref);
         return NULL;
     }
-    tmp[0] = '\0';
+    // tmp[0] = '\0';
  
     while (n != NULL){
          
@@ -228,17 +261,20 @@ bool setContains(const Set *radix, const char *key){
         e = n->edges->head;
         bool isPref = false;
         while (e != NULL && !isPref){
-            strcat(pref, e->label);
+            concatenate_string(&pref, e->label);
+            // strcat(pref, e->label);
             
             if (isPrefix(key, pref)){
-
-                strcpy(tmp, pref);
+                
+                copy_string(&tmp, pref);
+                // strcpy(tmp, pref);
                 n = e->targetNode;
                 isPref = true;
             }
 
             else {
-                strcpy(pref, tmp);
+                copy_string(&tmp, pref);
+                // strcpy(pref, tmp);
                 e = e->next;
             }     
         }
@@ -338,20 +374,16 @@ int setInsert(Set *radix, const char *key){
     RNode *n = radix->root;
     Edge *e = NULL;
 
-    char *pref = malloc(sizeof(char) * (MAXSIZE + 1));
-    // char *pref = duplicate_string(n->key);
+    char *pref = duplicate_string(n->key);
     if (!pref){
         return -1;
     }
-    pref[0] = '\0';
 
-    char *tmp = malloc(sizeof(char) * (MAXSIZE + 1));
-    // char *tmp = duplicate_string(n->key);
+    char *tmp = duplicate_string(n->key);
     if (!tmp){
         free(pref);
         return -1;
     }
-    tmp[0] = '\0';
 
     int cmp = 0;
     while (n != NULL){
@@ -367,19 +399,19 @@ int setInsert(Set *radix, const char *key){
         e = n->edges->head;
         bool prefix = false;
         while (e != NULL && !prefix){
-             
-            strcat(pref, e->label); 
+
+            concatenate_string(&pref, e->label);
             if (isPrefix(key, pref)){
                
-                strcpy(tmp, pref);
+                copy_string(&tmp, pref);
                 n = e->targetNode;
                  
                 prefix = true;   
             }
 
             else {
-                  
-                strcpy(pref, tmp); // back to the latest state 
+                
+                copy_string(&pref, tmp); // back to the latest state 
                      
                 char *rest = getRest(key, pref);                 
                    
@@ -395,7 +427,7 @@ int setInsert(Set *radix, const char *key){
                  
                 if (strlen(commonPref) > 0){
                     
-                    strcat(pref, commonPref);       
+                    concatenate_string(&pref, commonPref);
                 
                     RNode *newNode = rnNew(key); // create the new node
                         if (!newNode){
@@ -549,18 +581,16 @@ List *setGetAllStringPrefixes(const Set *set, const char *str)
 
     RNode *n = set->root;
     Edge *e = NULL;
-    char *pref = malloc(sizeof(char) * (MAXSIZE + 1));
+    char *pref = duplicate_string(n->key);
     if (!pref){
         return NULL;
     }
-    pref[0] = '\0';
 
-    char *tmp = malloc(sizeof(char) * (MAXSIZE + 1));
+    char *tmp = duplicate_string(n->key);
     if (!tmp){
         free(pref);
         return NULL;
     }
-    tmp[0] = '\0';
 
     size_t pCount = 0; // prefixes count
     size_t strSize = strlen(str); // maximum prefixes count
@@ -586,17 +616,16 @@ List *setGetAllStringPrefixes(const Set *set, const char *str)
         e = n->edges->head;
         bool isPref = false;
         while (e != NULL && !isPref){
-            strcat(pref, e->label);
+            concatenate_string(&pref, e->label);
 
             if (isPrefix(str, pref)){
-
-                strcpy(tmp, pref);
+                copy_string(&tmp, pref);
                 n = e->targetNode;
                 isPref = true;
             }
 
             else {
-                strcpy(pref, tmp);
+                copy_string(&pref, tmp);
                 e = e->next;
             }
         }

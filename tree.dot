@@ -1,7 +1,0 @@
-digraph RadixTree {
-	"0x5decdbfda780" [label="NULL"];
-	"0x5decdbfda780" -> "0x5decdbfda2c0" [label="team"];
-	"0x5decdbfda2c0" [label="team"];
-	"0x5decdbfda780" -> "0x5decdbfda830" [label="boat"];
-	"0x5decdbfda830" [label="boat"];
-}

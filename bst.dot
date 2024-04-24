@@ -1,5 +1,0 @@
-digraph BST {
-  "boat" -> "bo"
-  "boat" -> "team"
-  "team" -> "tea"
-}
