@@ -34,7 +34,6 @@ struct Set_t
     size_t size;
 };
 
-
 /**
  * @brief Duplicate a string
  *
@@ -86,8 +85,9 @@ static void copy_string(char **str1, const char *str2){
 }
 
 static void freeRec(RNode *n){
-   
-    Edge *edge = n->edges->head;
+    Edge *edge = NULL;
+    if (n->edges->head != NULL)
+        edge = n->edges->head;
     Edge *prev = NULL;
     while (edge != NULL){
 
@@ -98,15 +98,23 @@ static void freeRec(RNode *n){
         free(prev->label);
         free(prev);
     }
+    
     free(n->key);
     free (n->edges);
     free(n);
 }
 
 void setFree(Set *set){
-    freeRec(set->root);
+    if (!set)
+        return;
+        
+    if (set->root){
+        freeRec(set->root);
+    }
+
     free(set);
 }
+
 
 // ----------------------------------------- EDGE ------------------------------------------ //
 
@@ -211,13 +219,13 @@ static int isPrefix(const char *word, const char *prefix) {
 Set *setCreateEmpty(void){
     Set *radix = malloc(sizeof(Set));
     if (!radix){
-        printf("radixNew : allocation error\n");
+        printf("radix : allocation error\n");
         return NULL;
     }
 
     radix->root = NULL;
     radix->size = 0;
-
+ 
     return radix;
 }
 
@@ -234,14 +242,12 @@ bool setContains(const Set *radix, const char *key){
     if (!pref){
         return NULL;
     }
-    // pref[0] = '\0';
 
     char *tmp = duplicate_string(n->key);
     if (!tmp){
         free(pref);
         return NULL;
     }
-    // tmp[0] = '\0';
  
     while (n != NULL){
          
@@ -273,7 +279,7 @@ bool setContains(const Set *radix, const char *key){
             }
 
             else {
-                copy_string(&tmp, pref);
+                copy_string(&pref, tmp);
                 // strcpy(pref, tmp);
                 e = e->next;
             }     
@@ -579,6 +585,11 @@ List *setGetAllStringPrefixes(const Set *set, const char *str)
     return NULL;
    }
 
+   if (set->root == NULL){
+    return prefixList;
+   }
+   
+
     RNode *n = set->root;
     Edge *e = NULL;
     char *pref = duplicate_string(n->key);
@@ -640,3 +651,5 @@ List *setGetAllStringPrefixes(const Set *set, const char *str)
     free(tmp);
     return prefixList;
 }
+
+

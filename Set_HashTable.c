@@ -213,7 +213,7 @@ static int *getIndices(const Set *set, const char *key){
     if (!prefix){
         // printf("Allocation error. Failed to get minimum index\n");
         free(indices);
-        return (size_t)-1;
+        return NULL;
     }
 
     for (size_t i = 0; i < keyLength; i++){
