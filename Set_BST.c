@@ -12,8 +12,7 @@
 #include "Set.h"
 
 /* Opaque Structure */
-
-
+typedef struct BNode_t BNode;
 
 struct BNode_t
 {
@@ -196,7 +195,6 @@ bool setContains(const Set *bst, const char *key)
 
 static int isPrefix(const char *word, const char *prefix) {
 
-    // Use strncmp to compare the first strlen(prefix) characters of word with prefix
     return strncmp(word, prefix, strlen(prefix)) == 0;
 }
 
@@ -252,7 +250,7 @@ static void fillPrefixes(List *l, const char *str, BNode *n, char *wordMin){
         }
 
     }
-    return; // inutile
+    return; 
 }
 
 
@@ -268,8 +266,9 @@ List *setGetAllStringPrefixes(const Set *set, const char *str)
     char *wordMin = malloc(sizeof(char) * (MINSIZE + 1));
     if (!wordMin){
         fprintf(stderr, "Memory allocation failed for minimum prefix\n");
-        exit(1);
+        return NULL;
     }
+
     strncpy(wordMin, str, MINSIZE);
     wordMin[MINSIZE] = '\0';
 
@@ -279,36 +278,4 @@ List *setGetAllStringPrefixes(const Set *set, const char *str)
    free(wordMin);
 
    return prefixList;
-}
-
-// ---------------------------------------------------- END --------------------------------------------------- //
-
-
-void generateDotFile(BNode *node, FILE *dotFile) {
-    if (node == NULL) return;
-
-    // Recursively traverse left and right subtrees
-    if (node->left != NULL) {
-        fprintf(dotFile, "  \"%s\" -> \"%s\"\n", node->key, node->left->key);
-        generateDotFile(node->left, dotFile);
-    }
-    if (node->right != NULL) {
-        fprintf(dotFile, "  \"%s\" -> \"%s\"\n", node->key, node->right->key);
-        generateDotFile(node->right, dotFile);
-    }
-}
-
-// Function to generate DOT representation of BST
-void generateDot(Set *bst) {
-    FILE *dotFile = fopen("bst.dot", "w");
-    if (dotFile == NULL) {
-        printf("Error opening file.\n");
-        return;
-    }
-
-    fprintf(dotFile, "digraph BST {\n");
-    generateDotFile(bst->root, dotFile);
-    fprintf(dotFile, "}\n");
-
-    fclose(dotFile);
 }

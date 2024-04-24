@@ -286,7 +286,7 @@ static bool isInBoard(int r, int c, int size){
 }
 
 // GETS THE WORD FORMING A LINE ON THE GRID: HORIZONTAL, VERTICAL, DIAGONAL
-static bool *getWord(Board *board, char *word, int r, int c, int incr, int incc){
+static bool getWord(Board *board, char *word, int r, int c, int incr, int incc){
     int i = 0;
     int sr = r;
     int sc = c;
@@ -312,16 +312,14 @@ static void addFoundWords(Board *board, Set* set, Set* filledSet, List* wordsLis
     size_t n = board->size;
     char *word = malloc((sizeof(char) * n + 1));
     if (!word){
-        printf("Failed to allocate memory for word\n");
-        exit(1);
+        terminate("Failed to allocate memory for word");
     }
 
     if (getWord(board, word, r, c, incr, incc)){
         List *foundPrefixes = setGetAllStringPrefixes(set, word);
 
         if (!foundPrefixes){
-            printf("Failed to get prefixes of the word %s\n", word);
-            exit(1);
+            terminate("Failed to get prefixes of the word");
         }
         for (LNode *p = foundPrefixes->head; p != NULL; p = p->next){
 
@@ -329,9 +327,11 @@ static void addFoundWords(Board *board, Set* set, Set* filledSet, List* wordsLis
 
             if (setInsert(filledSet, copy) == 1){
                 if (!listInsertLast(wordsList, copy)){
-                    printf("Failed to add matching word to list\n");
-                    exit(1);
+                    terminate("Failed to add matching word to list");
                 }
+            }
+            else {
+                free(copy);
             }
         }
 
@@ -339,8 +339,6 @@ static void addFoundWords(Board *board, Set* set, Set* filledSet, List* wordsLis
     }
     free(word);
 }
-
-
 
 List *boardGetAllWordsFromSet(Board *board, Set *set)
 {
@@ -361,7 +359,6 @@ List *boardGetAllWordsFromSet(Board *board, Set *set)
     for (size_t i = 0; i < n; i++){
         for (size_t j = 0; j < n; j++){
 
-
             addFoundWords(board, set, filledSet, wordsList, i, j, 0, 1);
 
             addFoundWords(board, set, filledSet, wordsList, i, j, 0, -1);
@@ -377,8 +374,6 @@ List *boardGetAllWordsFromSet(Board *board, Set *set)
             addFoundWords(board, set, filledSet, wordsList, i, j, -1, -1);
 
             addFoundWords(board, set, filledSet, wordsList, i, j, 1, 1);
-
-
         }
 
     }

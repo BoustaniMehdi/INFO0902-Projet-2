@@ -4,16 +4,10 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-#include<stdio.h> // A ENLEVER
-
-
 #include "List.h"
 
 /** Set (opaque) structure */
 typedef struct Set_t Set;
-typedef struct RNode_t RNode;
-
-typedef struct BNode_t BNode;
 
 /**
  * @brief Create an empty set. The returned set needs to be freed
@@ -68,9 +62,4 @@ int setInsert(Set *set, const char *key);
  */
 List *setGetAllStringPrefixes(const Set *set, const char *string);
 
-void generateRadixTreeDOT(Set *radixTree, const char *filename);
-void writeRadixTreeDOT(FILE *file, RNode *node);
-
-void generateDotFile(BNode *node, FILE *dotFile);
-void generateDot(Set *bst);
 #endif // !_SET_H_
