@@ -238,8 +238,9 @@ static void fillPrefixes(List *l, const char *str, BNode *n, char *wordMin){
             }
 
             else if (cmp1 == 0 || cmp2 == 0){
-                if (cmp1 == 0) // the minimum (smallest) prefix has been found -> continue search in right sub-tree
+                if (cmp1 == 0){ // the minimum (smallest) prefix has been found -> continue search in right sub-tree
                     fillPrefixes(l, str, n->right, wordMin); 
+                }
 
                 else if (cmp2 == 0) // the maximum (largest) prefix has been found -> continue search in left sub-tree
                     fillPrefixes(l, str, n->left, wordMin);
@@ -275,10 +276,8 @@ static void fillPrefixes(List *l, const char *str, BNode *n, char *wordMin){
     return; 
 }
 
-
 List *setGetAllStringPrefixes(const Set *set, const char *str)
 {
-
    List *prefixList = listNew();
    if (!prefixList){
     printf("Failed to get all prefixes\n");
@@ -294,6 +293,19 @@ List *setGetAllStringPrefixes(const Set *set, const char *str)
 
     strncpy(wordMin, str, MINSIZE);
     wordMin[MINSIZE] = '\0';
+
+    if (setContains(set, wordMin)){ // avoid unnecessary searches for the minimum prefix
+        if (!listInsertLast(prefixList, duplicate_string(wordMin))){
+            listFree(prefixList, true);
+            free(wordMin);
+            return NULL;
+        }
+    }
+
+    if (strlen(str) > MINSIZE){ 
+         strncpy(wordMin, str, MINSIZE + 1);
+         wordMin[MINSIZE + 1] = '\0';
+    }
 
    BNode *n = set->root;
    fillPrefixes(prefixList, str, n, wordMin);
