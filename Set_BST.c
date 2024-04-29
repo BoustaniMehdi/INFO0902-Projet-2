@@ -189,13 +189,28 @@ bool setContains(const Set *bst, const char *key)
 
 /* student code starts here */
 
-#define MINSIZE 1 // minimum size of a word
+// #define MINSIZE 1 // minimum size of a word
 
 /* Prototypes of static functions */
 
 static bool isPrefix(const char *str, const char *word);
-static void fillPrefixes(List *l, const char *str, BNode *n, char *wordMin);
+static void fillPrefixes(List *l, List *prefixes, BNode *n);
+static void listDeleteHead(List *l);
 
+
+
+/**
+ * @brief Removes the first element of the list
+ *
+ * @param l a pointer to a list
+ */
+static void listDeleteHead(List *l){
+    LNode *tmp = l->head;
+   l->head = tmp->next;
+   free(tmp->value);
+   free(tmp);
+   l->size--;
+}
 
 /**
  * @brief Checks if a given word is a prefix of a string
@@ -220,56 +235,58 @@ static bool isPrefix(const char *str, const char *word){
  * @param wordMin the smallest word (smallest prefix possible)
  *               
  */
-static void fillPrefixes(List *l, const char *str, BNode *n, char *wordMin){
+static void fillPrefixes(List *l, List *prefixes, BNode *n){
+    if (prefixes->head == NULL || prefixes->last == NULL){
+        return;
+    }
     if (n != NULL){
+        int cmp1 = strcmp(n->key, prefixes->head->value); // compare the node's key with the minimum prefix
+        int cmp2 = strcmp(n->key, prefixes->last->value); // compare the node's key with the maximum prefix
 
-        if (isPrefix(str, n->key)){
+        if (isPrefix(prefixes->last->value, n->key)){
 
           if (!listInsertLast(l, duplicate_string(n->key))){
                 printf("Failed to fill prefixes into list\n");
-                return;
-            }
+                exit(1);
+                // return;
+            }            
             
-            int cmp1 = strcmp(n->key, wordMin); // compare the node's key with the minimum prefix
-            int cmp2 = strcmp(n->key, str); // compare the node's key with the maximum prefix
-
             if (cmp1 == 0 && cmp2 == 0){ // we only have 1 prefix
                 return;
             }
 
             else if (cmp1 == 0 || cmp2 == 0){
-                if (cmp1 == 0) // the minimum (smallest) prefix has been found -> continue search in right sub-tree
-                    fillPrefixes(l, str, n->right, wordMin); 
+                
+                if (cmp1 == 0){ // the minimum (smallest) prefix has been found -> continue search in right sub-tree
+                    listDeleteHead(prefixes);
+                    fillPrefixes(l, prefixes, n->right); 
+                }
 
                 else if (cmp2 == 0) // the maximum (largest) prefix has been found -> continue search in left sub-tree
-                    fillPrefixes(l, str, n->left, wordMin);
+                    fillPrefixes(l, prefixes, n->left);               
             }
 
             else { // prefix found is between smallest and largest prefixes -> continue search in both sub-trees
-                fillPrefixes(l, str, n->right, wordMin);
-                fillPrefixes(l, str, n->left, wordMin);
+                fillPrefixes(l, prefixes, n->right);
+                fillPrefixes(l, prefixes, n->left);
             }
         }
         
         // node's key is not a prefix of the word (str)
         else {
 
-            int cmp1 = strcmp(n->key, wordMin);
-            int cmp2 = strcmp(n->key, str);
-
             if (cmp2 > 0) // node's key is greater than the largest prefix -> continue search in left sub-tree
-                fillPrefixes(l, str, n->left, wordMin);
+                fillPrefixes(l, prefixes, n->left);
 
             else {
                 if (cmp1 <= 0) // node's key is less than the smallest prefix -> continue search in right sub-tree
-                    fillPrefixes(l, str, n->right, wordMin);
+                    fillPrefixes(l, prefixes, n->right);
 
                 else if (cmp1 > 0){ // continue search in both sub-trees
-                    fillPrefixes(l, str, n->right, wordMin);
-                    fillPrefixes(l, str, n->left, wordMin);
+                    fillPrefixes(l, prefixes, n->right);
+                    fillPrefixes(l, prefixes, n->left);
                 }
             }
-
         }
     }
     return; 
@@ -279,26 +296,53 @@ static void fillPrefixes(List *l, const char *str, BNode *n, char *wordMin){
 List *setGetAllStringPrefixes(const Set *set, const char *str)
 {
 
-   List *prefixList = listNew();
-   if (!prefixList){
-    printf("Failed to get all prefixes\n");
+   List *foundPrefixes = listNew();
+   if (!foundPrefixes){
+    printf("Allocation Error : Failed to allocate foundPrefixes\n");
     return NULL;
    }
 
-    // Minimum prefix possible of a word with a minimum size of 1
-    char *wordMin = malloc(sizeof(char) * (MINSIZE + 1));
-    if (!wordMin){
-        fprintf(stderr, "Memory allocation failed for minimum prefix\n");
+    List *strPrefixes = listNew();
+    if (!strPrefixes){
+        printf("Allocation Error : Failed to allocate strPrefixes\n");
+        listFree(foundPrefixes, false);
         return NULL;
-    }
+   }
+   
+   size_t strSize = strlen(str);
+   // list of prefixes of the word
+   char *prefix = malloc(sizeof(char) * strSize + 1);
+   if (!prefix){
+        printf("Allocation Error : Failed to allocate a prefix string\n");
+        listFree(foundPrefixes, false);
+        listFree(strPrefixes, false);
+        return NULL;
+   }
+    // list of prefixes 
+   for (size_t i = 0; i < strSize; i++){
+        prefix[i] = str[i];
+        prefix[i+1] = '\0';
+        if (!listInsertLast(strPrefixes, duplicate_string(prefix))){
+            printf("Error : Failed to insert element to list\n");
+            listFree(foundPrefixes, true);
+            listFree(strPrefixes, true);
+            free(prefix);
+            return NULL;
+        }
+   }
 
-    strncpy(wordMin, str, MINSIZE);
-    wordMin[MINSIZE] = '\0';
+   free(prefix);
+
+   if (setContains(set, strPrefixes->head->value)){ // avoid unnecessary searches for prefixes of size 1 
+        listInsertLast(foundPrefixes, duplicate_string(strPrefixes->head->value));
+   }
+   
+   listDeleteHead(strPrefixes);
 
    BNode *n = set->root;
-   fillPrefixes(prefixList, str, n, wordMin);
+   fillPrefixes(foundPrefixes, strPrefixes, n);
 
-   free(wordMin);
+   listFree(strPrefixes, true);
 
-   return prefixList;
+   return foundPrefixes;
 }
