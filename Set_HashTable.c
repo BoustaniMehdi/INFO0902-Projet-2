@@ -189,17 +189,41 @@ bool setContains(const Set *set, const char *key)
 
 /* student code starts here */
 
+/* Prototypes */
 
-// ----------------------------------------------- STUDENT CODE ------------------------------------------------- //
+static bool isPrefix(const char *str, const char *word);
+static int *getIndices(const Set *set, const char *key);
 
 
-static int isPrefix(const char *word, const char *prefix) {
 
-    // Use strncmp to compare the first strlen(prefix) characters of word with prefix
-    return strncmp(word, prefix, strlen(prefix)) == 0;
+/* static functions */
+
+
+
+/**
+ * @brief Checks if a given word is a prefix of a string
+ *
+ * @param str a string
+ * @param word the word to be checked
+ * 
+ * @return bool : true if word is a prefix of str
+ *                false otherwise
+ */
+static bool isPrefix(const char *str, const char *word){
+
+    return strncmp(str, word, strlen(word)) == 0;
 }
 
 
+/**
+ * @brief Gets the indices of all prefixes of a key (string) (using hashfunction)
+ *
+ * @param set the hashtable set
+ * @param key string
+ * 
+ * @return int* : Array of integers containing the corresponding index in the hashtable of each prefix of key 
+ *                
+ */
 static int *getIndices(const Set *set, const char *key){
     size_t keyLength = strlen(key);
     int *indices = malloc(sizeof(int) * keyLength); // array containing prefixes indices in the hash table

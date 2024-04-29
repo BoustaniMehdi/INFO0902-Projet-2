@@ -189,15 +189,37 @@ bool setContains(const Set *bst, const char *key)
 
 /* student code starts here */
 
-// ------------------------------------------------------ ABDELKADER CODE ----------------------------------------------------- //
-
 #define MINSIZE 1 // minimum size of a word
 
-static int isPrefix(const char *word, const char *prefix) {
+/* Prototypes of static functions */
 
-    return strncmp(word, prefix, strlen(prefix)) == 0;
+static bool isPrefix(const char *str, const char *word);
+static void fillPrefixes(List *l, const char *str, BNode *n, char *wordMin);
+
+
+/**
+ * @brief Checks if a given word is a prefix of a string
+ *
+ * @param str a string
+ * @param word the word to be checked
+ * 
+ * @return bool : true if word is a prefix of str
+ *                false otherwise
+ */
+static bool isPrefix(const char *str, const char *word){
+
+    return strncmp(str, word, strlen(word)) == 0;
 }
 
+/**
+ * @brief fills recursively a list with found prefixes of a string in the set (bst)
+ *
+ * @param l  the list to fill
+ * @param str the string which prefixes have to be filled
+ * @param n the root of the tree
+ * @param wordMin the smallest word (smallest prefix possible)
+ *               
+ */
 static void fillPrefixes(List *l, const char *str, BNode *n, char *wordMin){
     if (n != NULL){
 
@@ -207,48 +229,48 @@ static void fillPrefixes(List *l, const char *str, BNode *n, char *wordMin){
                 printf("Failed to fill prefixes into list\n");
                 return;
             }
-
-            int cmp1 = strcmp(n->key, wordMin);
-            int cmp2 = strcmp(n->key, str);
+            
+            int cmp1 = strcmp(n->key, wordMin); // compare the node's key with the minimum prefix
+            int cmp2 = strcmp(n->key, str); // compare the node's key with the maximum prefix
 
             if (cmp1 == 0 && cmp2 == 0){ // we only have 1 prefix
                 return;
             }
 
             else if (cmp1 == 0 || cmp2 == 0){
-                if (cmp1 == 0)
-                    fillPrefixes(l, str, n->right, wordMin);
+                if (cmp1 == 0) // the minimum (smallest) prefix has been found -> continue search in right sub-tree
+                    fillPrefixes(l, str, n->right, wordMin); 
 
-                else if (cmp2 == 0)
+                else if (cmp2 == 0) // the maximum (largest) prefix has been found -> continue search in left sub-tree
                     fillPrefixes(l, str, n->left, wordMin);
             }
 
-            else {
+            else { // prefix found is between smallest and largest prefixes -> continue search in both sub-trees
                 fillPrefixes(l, str, n->right, wordMin);
                 fillPrefixes(l, str, n->left, wordMin);
             }
         }
-
+        
+        // node's key is not a prefix of the word (str)
         else {
 
             int cmp1 = strcmp(n->key, wordMin);
             int cmp2 = strcmp(n->key, str);
 
-            if (cmp2 > 0)
+            if (cmp2 > 0) // node's key is greater than the largest prefix -> continue search in left sub-tree
                 fillPrefixes(l, str, n->left, wordMin);
 
             else {
-                if (cmp1 <= 0)
+                if (cmp1 <= 0) // node's key is less than the smallest prefix -> continue search in right sub-tree
                     fillPrefixes(l, str, n->right, wordMin);
 
-                else if (cmp1 > 0){ // minword < prefix < maxword
+                else if (cmp1 > 0){ // continue search in both sub-trees
                     fillPrefixes(l, str, n->right, wordMin);
                     fillPrefixes(l, str, n->left, wordMin);
                 }
             }
 
         }
-
     }
     return; 
 }
@@ -263,6 +285,7 @@ List *setGetAllStringPrefixes(const Set *set, const char *str)
     return NULL;
    }
 
+    // Minimum prefix possible of a word with a minimum size of 1
     char *wordMin = malloc(sizeof(char) * (MINSIZE + 1));
     if (!wordMin){
         fprintf(stderr, "Memory allocation failed for minimum prefix\n");

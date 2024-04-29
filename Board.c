@@ -259,8 +259,15 @@ void boardDisplay(Board *board)
 
 /* Student code starts here */
 
+/* Prototypes */
 
-// ------------------------------------------------------ STUDENT CODE ----------------------------------------------------- //
+static char *duplicate_string(const char *str);
+static bool isInBoard(int r, int c, int size);
+static bool getWord(Board *board, char *word, int r, int c, int incr, int incc);
+static void addFoundPrefixes(Board *board, Set* set, Set* filledSet, List* wordsList, int r, int c, int incr, int incc);
+
+
+/* static functions */
 
 
 /**
@@ -279,13 +286,35 @@ static char *duplicate_string(const char *str)
     return copy;
 }
 
-
+/**
+ * @brief Checks if a given position is valid in the grid (board)
+ *
+ * @param r row
+ * @param c column
+ * @param size size of the grid
+ * 
+ * @return bool : true if the pos is valid
+ *                false itherwise
+ */
 static bool isInBoard(int r, int c, int size){
     return r >= 0 && r < size
         && c >= 0 && c < size;
 }
 
-// GETS THE WORD FORMING A LINE ON THE GRID: HORIZONTAL, VERTICAL, DIAGONAL
+
+/**
+ * @brief return true if the word is found at position (r,c) in the direction
+ *        obtained by incrementing row and column by incr and incc respetively
+ *
+ * @param board       a pointer to a board
+ * @param word        the word to be found
+ * @param r           the starting row
+ * @param c           the starting column
+ * @param incr        the row increment
+ * @param incc        the column increment
+ * @return true       if the word is found
+ * @return false      otherwise
+ */
 static bool getWord(Board *board, char *word, int r, int c, int incr, int incc){
     int i = 0;
     int sr = r;
@@ -294,7 +323,7 @@ static bool getWord(Board *board, char *word, int r, int c, int incr, int incc){
     if (isInBoard(sr + incr, sc + incc, n)){
 
         word[i] = board->grid[sr][sc];
-        while (isInBoard(sr + incr, sc + incc, n)){
+        while (isInBoard(sr + incr, sc + incc, n)){ 
 
             sr += incr;
             sc += incc;
@@ -307,8 +336,21 @@ static bool getWord(Board *board, char *word, int r, int c, int incr, int incc){
     return false;
 }
 
-// ADDS A FOUND WORD IN SET TO OUR LIST
-static void addFoundWords(Board *board, Set* set, Set* filledSet, List* wordsList, int r, int c, int incr, int incc){
+
+/**
+ * @brief Searches for a word forming a line on the grid, and then adds to a list all its prefixes found in the set.
+ * 
+ * @param board a pointer to a board
+ * @param set a pointer to a set
+ * @param filledSet a pointer to a set (used for checking duplicates)
+ * @param wordsList a pointer to a list (will contain found prefixes in the set)
+ * @param r starting row 
+ * @param c starting column
+ * @param incr the row increment
+ * @param incc the column increment
+ *
+ */
+static void addFoundPrefixes(Board *board, Set* set, Set* filledSet, List* wordsList, int r, int c, int incr, int incc){
     size_t n = board->size;
     char *word = malloc((sizeof(char) * n + 1));
     if (!word){
@@ -359,21 +401,21 @@ List *boardGetAllWordsFromSet(Board *board, Set *set)
     for (size_t i = 0; i < n; i++){
         for (size_t j = 0; j < n; j++){
 
-            addFoundWords(board, set, filledSet, wordsList, i, j, 0, 1);
+            addFoundPrefixes(board, set, filledSet, wordsList, i, j, 0, 1); // right
 
-            addFoundWords(board, set, filledSet, wordsList, i, j, 0, -1);
+            addFoundPrefixes(board, set, filledSet, wordsList, i, j, 0, -1); // left
 
-            addFoundWords(board, set, filledSet, wordsList, i, j, -1, 0);
+            addFoundPrefixes(board, set, filledSet, wordsList, i, j, -1, 0); // up
 
-            addFoundWords(board, set, filledSet, wordsList, i, j, 1, 0);
+            addFoundPrefixes(board, set, filledSet, wordsList, i, j, 1, 0); // down
 
-            addFoundWords(board, set, filledSet, wordsList, i, j, -1, 1);
+            addFoundPrefixes(board, set, filledSet, wordsList, i, j, -1, 1); // up-right
 
-            addFoundWords(board, set, filledSet, wordsList, i, j, 1, -1);
+            addFoundPrefixes(board, set, filledSet, wordsList, i, j, 1, -1); // down-left
 
-            addFoundWords(board, set, filledSet, wordsList, i, j, -1, -1);
+            addFoundPrefixes(board, set, filledSet, wordsList, i, j, -1, -1); // up-left
 
-            addFoundWords(board, set, filledSet, wordsList, i, j, 1, 1);
+            addFoundPrefixes(board, set, filledSet, wordsList, i, j, 1, 1); // down-right
         }
 
     }

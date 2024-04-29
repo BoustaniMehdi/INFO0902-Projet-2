@@ -234,7 +234,9 @@ static bool isLeaf(RNode *node){
 }
 
 bool setContains(const Set *radix, const char *key){
-     
+    if (radix->root == NULL) // set is empty
+        return false;
+    
     RNode *n = radix->root;
     Edge *e = NULL;
 
