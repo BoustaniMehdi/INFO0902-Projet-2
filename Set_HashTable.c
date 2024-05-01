@@ -193,12 +193,37 @@ bool setContains(const Set *set, const char *key)
 
 static bool isPrefix(const char *str, const char *word);
 static int *getIndices(const Set *set, const char *key);
-
-
-
 /* static functions */
 
 
+/**
+ * @brief Gets the hash indices of all prefixes of a key (string) 
+ *  "Uses same hashing as hashfunction and stores indices directly in an array without watching each prefix individually"
+ *
+ * @param set the hashtable set
+ * @param key string
+ * 
+ * @return int* : Array of integers containing the corresponding index in the hashtable of each prefix of key 
+ *                
+ */
+static int *getIndices(const Set *set, const char *key)
+{
+    size_t keySize = strlen(key);
+    int *indices = malloc(sizeof(int) * keySize);
+    if (!indices){
+        return NULL;
+    }
+    size_t count = 0;
+
+    for (size_t i = 0; i < keySize; i++)
+    {
+        count *= 26;
+        count += key[i] - 'a';
+        indices[i] = count % set->tableSize;
+    }
+
+    return indices;
+}
 
 /**
  * @brief Checks if a given word is a prefix of a string
@@ -214,42 +239,6 @@ static bool isPrefix(const char *str, const char *word){
     return strncmp(str, word, strlen(word)) == 0;
 }
 
-
-/**
- * @brief Gets the indices of all prefixes of a key (string) (using hashfunction)
- *
- * @param set the hashtable set
- * @param key string
- * 
- * @return int* : Array of integers containing the corresponding index in the hashtable of each prefix of key 
- *                
- */
-static int *getIndices(const Set *set, const char *key){
-    size_t keyLength = strlen(key);
-    int *indices = malloc(sizeof(int) * keyLength); // array containing prefixes indices in the hash table
-
-    if (!indices){
-        // printf("Allocation Error : Failed to allocate indices array\n");
-        return NULL;
-    }
-
-    char *prefix = malloc(strlen(key) * sizeof(char) + 1);
-    if (!prefix){
-        // printf("Allocation error. Failed to get minimum index\n");
-        free(indices);
-        return NULL;
-    }
-
-    for (size_t i = 0; i < keyLength; i++){
-        prefix[i] = key[i];
-        prefix[i+1] = '\0';
-        indices[i] = hashFunction(prefix) % set->tableSize;
-    }
-
-    free(prefix);
-    return indices;
-}
-
 List *setGetAllStringPrefixes(const Set *set, const char *str)
 {
     List *foundPrefixes = listNew();
@@ -259,6 +248,7 @@ List *setGetAllStringPrefixes(const Set *set, const char *str)
 
     int *indices = getIndices(set, str);
     if (!indices){
+        listFree(foundPrefixes, false);
         return NULL;
     }
 
@@ -268,14 +258,21 @@ List *setGetAllStringPrefixes(const Set *set, const char *str)
 
         element = set->table[index];
         while (element != NULL){
-            if (isPrefix(str, element->key)){
 
-                listInsertLast(foundPrefixes, duplicate_string(element->key));
+            if (isPrefix(str, element->key)){
+                
+                char *copy = duplicate_string(element->key);
+                if (!copy){
+                    free(indices);
+                    listFree(foundPrefixes, true);
+                    return NULL;
+                }
+
+                listInsertLast(foundPrefixes, copy);
             }
             element = element->next;
         }
     }
     free(indices);
-    // to be completed.
     return foundPrefixes;
 }

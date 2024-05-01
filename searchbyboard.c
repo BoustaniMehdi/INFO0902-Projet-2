@@ -133,11 +133,11 @@ int main(int argc, char **argv)
         printf("Something went wrong.\n");
     }
 
-    /* Uncomment to print all words found
-    for (LNode *p = result->head; p != NULL; p = p->next)
-        printf("[%s]", (char *)p->value);
-    printf("\n");
-    */
+    // /* Uncomment to print all words found
+    // for (LNode *p = result->head; p != NULL; p = p->next)
+    //     printf("[%s]", (char *)p->value);
+    // printf("\n");
+
 
     listFree(result, true);
     listFree(words, true);
