@@ -252,9 +252,12 @@ List *setGetAllStringPrefixes(const Set *set, const char *str)
         return NULL;
     }
 
+    size_t strSize = strlen(str);
+
     LLElement *element = set->table[0];
-    for (size_t i = 0; i < strlen(str); i++){
-        size_t index = indices[i];
+    
+    for (size_t i = 0; i < strSize ; i++){
+        size_t index = indices[i]; // index of the corrsponding prefix
 
         element = set->table[index];
         while (element != NULL){
@@ -268,7 +271,12 @@ List *setGetAllStringPrefixes(const Set *set, const char *str)
                     return NULL;
                 }
 
-                listInsertLast(foundPrefixes, copy);
+                if (!listInsertLast(foundPrefixes, copy)){
+                    free(copy);
+                    free(indices);
+                    listFree(foundPrefixes, true);
+                    return NULL;
+                }
             }
             element = element->next;
         }

@@ -4,35 +4,54 @@
 #include <stdlib.h>
 
 
+/* STRUCTURES */
+
 typedef struct RNode_t RNode;
 typedef struct Edge_t Edge;
 typedef struct EList_t EdgeList;
 
-struct Edge_t
+struct Edge_t // Edge 
 {
     char *label;
     RNode *targetNode;
     struct Edge_t *next;
 };
 
-struct EList_t
+struct EList_t  // list of edges (inspired by linked list)
 {
     size_t size;
     Edge *head;
     Edge *last;
 };
 
-struct RNode_t
+struct RNode_t // radix node
 {
     EdgeList *edges;
     char *key;
 };
 
-struct Set_t
+struct Set_t // radix set
 {
     RNode *root;
     size_t size;
 };
+
+/* STATIC FUNCTIONS */
+static char *duplicate_string(const char *str);
+static void terminate(char *m);
+static void concatenate_string(char **str1, const char *str2);
+static void copy_string(char **copy, const char *str);
+static int isPrefix(const char *word, const char *prefix);
+static char *getRest(const char *key, const char *pref);
+static char *getCommonPref(const char *str1, const char *str2);
+
+static EdgeList *edgeListNew(void);
+static bool edgesInsertLast(EdgeList *l, RNode *targetNode, const char *label);
+static bool addEdge(RNode *source, RNode *target, const char *label);
+static void setEdgeLabel(Edge *e, char *newLabel);
+
+static RNode *rnNew(const char *key);
+static bool isLeaf(RNode *node);
 
 /**
  * @brief Duplicate a string
@@ -60,6 +79,12 @@ static void terminate(char *m)
     exit(EXIT_FAILURE);
 }
 
+/**
+ * @brief Concatenates 2 strings 
+ * 
+ * @param str1 a pointer to a string (will contain result)
+ * @param str2 a string
+ */
 static void concatenate_string(char **str1, const char *str2){
     size_t len1 = strlen(*str1);
     size_t len2 = strlen(str2);
@@ -72,18 +97,29 @@ static void concatenate_string(char **str1, const char *str2){
     strcat(*str1, str2);
 }
 
-static void copy_string(char **str1, const char *str2){
-    size_t len1 = strlen(*str1);
-    size_t len2 = strlen(str2);
+/**
+ * @brief copies a string
+ * 
+ * @param copy a pointer to a string (will contain copy)
+ * @param str a string
+ */
+static void copy_string(char **copy, const char *str){
+    size_t len1 = strlen(*copy);
+    size_t len2 = strlen(str);
     
-    *str1 = realloc(*str1, (len1 + len2 +1) * sizeof(char));
-    if (!*str1){
+    *copy = realloc(*copy, (len1 + len2 +1) * sizeof(char));
+    if (!*copy){
         terminate("Allocation Error : Failed to reallocate string\n");
     }
 
-    strcpy(*str1, str2);
+    strcpy(*copy, str);
 }
 
+/**
+ * @brief frees a radix tree recursively a starting node (root node to free whole set)
+ * 
+ * @param n a pointer to a RNode (radix node)
+ */
 static void freeRec(RNode *n){
     Edge *edge = NULL;
     if (n->edges->head != NULL)
@@ -104,209 +140,21 @@ static void freeRec(RNode *n){
     free(n);
 }
 
-void setFree(Set *set){
-    if (!set)
-        return;
-        
-    if (set->root){
-        freeRec(set->root);
-    }
-
-    free(set);
-}
-
-
-// ----------------------------------------- EDGE ------------------------------------------ //
-
-static EdgeList *edgeListNew(void){
-    EdgeList *edgeList = malloc(sizeof(EdgeList));
-    if (!edgeList){
-        return NULL;
-    }
-    edgeList->head = NULL;
-    edgeList->last = NULL;
-    edgeList->size = 0;
-    return edgeList;
-}
-
-/* ------------------------------------------------------------------------- *
- * Inserts a new element at the beginning of the list.
- *
- * PARAMETERS
- * l            A valid pointer to a List object
- * value        The value to store
- *
- * RETURN
- * res          A boolean equal to true if the new element was successfully
- *              inserted, false otherwise (error)
- * ------------------------------------------------------------------------- */
-
-static bool edgesInsertLast(EdgeList *l, RNode *targetNode, const char *label);
-
-static bool edgesInsertLast(EdgeList *l, RNode *targetNode, const char *label)
-{
-    Edge *edge = malloc(sizeof(Edge));
-    if (!edge){
-        printf("Allocation Error :Failed to insert a new edge to edges list \n");
-        return false;
-    }
-    // Initialisation
-    edge->next = NULL;
-    edge->targetNode = targetNode;
-    edge->label = duplicate_string(label);
-    // Adding the node to the list
-    if (!l->last)
-    {
-        // First element in the list
-        l->last = edge;
-        l->head = edge;
-    }
-    else
-    {
-        // At least one element in the list
-        l->last->next = edge;
-        l->last = edge;
-    }
-    // In both cases, increment size
-    l->size++;
-    return true;
-}
-
-static bool addEdge(RNode *source, RNode *target, const char *label){
-    return edgesInsertLast(source->edges, target, label);
-}
-
-static void setEdgeLabel(Edge *e, char *newLabel){
-    if (e->label){
-        free(e->label);
-    }
-    e->label = duplicate_string(newLabel);
-}
-
-// ---------------------------------------- END EDGE ---------------------------------------// 
-
-
-// ----------------------------------------- RNode -------------------------------------------// 
-
-static RNode *rnNew(const char *key){
-    RNode *n = malloc(sizeof(RNode));
-    if (!n){
-        printf("Error : Failed to allocate a new node\n");
-        return NULL;
-    }
-    n->edges = edgeListNew();
-    if (!n->edges){
-        free(n);
-        return NULL;
-    }
-    n->key = duplicate_string(key);
-
-    return n;
-}
-
-// ----------------------------------------- END RNode ---------------------------------------//
-
-
-static int isPrefix(const char *word, const char *prefix) {
-
-    // Use strncmp to compare the first strlen(prefix) characters of word with prefix
-    return strncmp(word, prefix, strlen(prefix)) == 0;
-}
-
-
-// // ------------------------------------------ SET RADIX ------------------------------------- //
-
-Set *setCreateEmpty(void){
-    Set *radix = malloc(sizeof(Set));
-    if (!radix){
-        printf("radix : allocation error\n");
-        return NULL;
-    }
-
-    radix->root = NULL;
-    radix->size = 0;
- 
-    return radix;
-}
-
-static bool isLeaf(RNode *node){
-   return (node->edges->size == 0);
-}
-
-bool setContains(const Set *radix, const char *key){
-    if (radix->root == NULL) // set is empty
-        return false;
-    
-    RNode *n = radix->root;
-    Edge *e = NULL;
-
-    char *pref = duplicate_string(n->key);
-    if (!pref){
-        return NULL;
-    }
-
-    char *tmp = duplicate_string(n->key);
-    if (!tmp){
-        free(pref);
-        return NULL;
-    }
- 
-    while (n != NULL){
-         
-        int cmp = strcmp(key, n->key);
-        if (cmp == 0){
-            free(tmp);
-            free(pref);
-            return true;
-        }
-        
-        if (isLeaf(n)){
-            free(pref);
-            free(tmp);
-            return false;
-        }
-        
-        e = n->edges->head;
-        bool isPref = false;
-        while (e != NULL && !isPref){
-            concatenate_string(&pref, e->label);
-            // strcat(pref, e->label);
-            
-            if (isPrefix(key, pref)){
-                
-                copy_string(&tmp, pref);
-                // strcpy(tmp, pref);
-                n = e->targetNode;
-                isPref = true;
-            }
-
-            else {
-                copy_string(&pref, tmp);
-                // strcpy(pref, tmp);
-                e = e->next;
-            }     
-        }
-        if (e == NULL){
-            free(tmp);
-            free(pref);  
-            return false;
-        }
-    }
-   
-    free(tmp);
-    free(pref);
-    return false;
-}
-
-// // -------------------------------------------------------- INSERT ------------------------------------------ //
-
-
+/**
+ * @brief gets the remaining substring of a key (key - pref)
+ * 
+ * @param key a string
+ * @param pref a string (normally a substring of key)
+ * 
+ * @return char* the remaining substring (key - pref)
+ *         NULL if there is no substring remain
+ */
 static char *getRest(const char *key, const char *pref){
    
     size_t keySize = strlen(key);
     size_t prefSize = strlen(pref);
 
-    if (prefSize > keySize){
+    if (prefSize > keySize){ // cannot get a remaining substring
         return NULL;
     }
 
@@ -329,6 +177,14 @@ static char *getRest(const char *key, const char *pref){
     return rest;
 }
 
+/**
+ * @brief Gets the common prefix of 2 strings
+ *
+ * @param str1 a string
+ * @param str2 a string
+ * 
+ * @return char* the common prefix between str1 and str2               
+ */
 static char *getCommonPref(const char *str1, const char *str2){
     size_t size1 = strlen(str1);
     size_t size2 = strlen(str2);
@@ -356,12 +212,328 @@ static char *getCommonPref(const char *str1, const char *str2){
     return commonPref;
 }
 
+/**
+ * @brief Checks if a radix node is a leaf
+ * 
+ * @param node a pointer to RNode object
+ * 
+ * @return true if the node is a leaf
+ *         false otherwise
+ */
+static bool isLeaf(RNode *node){
+   return (node->edges->size == 0);
+}
+
+/**
+ * @brief Checks if a given word is a prefix of a string
+ *
+ * @param str a string
+ * @param word a string (word to be checked)
+ * 
+ * @return bool : true if word is a prefix of str
+ *                false otherwise
+ */
+static int isPrefix(const char *word, const char *prefix) {
+
+    // Use strncmp to compare the first strlen(prefix) characters of word with prefix
+    return strncmp(word, prefix, strlen(prefix)) == 0;
+}
+
+/**
+ * @brief Creates an empty edge list
+ * 
+ * @return EdgeList*, a pointer to a a valid EdgeList
+ *         NULL, in error case
+ */
+static EdgeList *edgeListNew(void){
+    EdgeList *edgeList = malloc(sizeof(EdgeList));
+    if (!edgeList){
+        return NULL;
+    }
+    edgeList->head = NULL;
+    edgeList->last = NULL;
+    edgeList->size = 0;
+    return edgeList;
+}
+
+/**
+ * @brief Inserts a new element (Edge) at the end of an Edgelist.
+ * 
+ * @param l A valid pointer to a  EdgeList object
+ * @param targetNode A pointer to RNode object (target node of the inserted edge)
+ * @param label a string, the label of the inserted edge
+ * 
+ * @return bool, true if the edge was successfully inserted
+ *               false other wise
+ */
+static bool edgesInsertLast(EdgeList *l, RNode *targetNode, const char *label)
+{
+    Edge *edge = malloc(sizeof(Edge));
+    if (!edge){
+        printf("Allocation Error :Failed to insert a new edge to edges list \n");
+        return false;
+    }
+    // Initialisation
+    edge->next = NULL;
+    edge->targetNode = targetNode;
+    edge->label = duplicate_string(label);
+    if (!edge->label){
+        free(edge);
+        return NULL;
+    }
+    // Adding the node to the list
+    if (!l->last)
+    {
+        // First element in the list
+        l->last = edge;
+        l->head = edge;
+    }
+    else
+    {
+        // At least one element in the list
+        l->last->next = edge;
+        l->last = edge;
+    }
+    // In both cases, increment size
+    l->size++;
+    return true;
+}
+
+/**
+ * @brief Adds an edge from a source node 
+ * 
+ * @param source a pointer to RNode, the source node
+ * @param target a pointer to RNode, the target node
+ * @param label  a string, the label of the new edge between both nodes
+ * 
+ * @return bool, true if the edge has been successfully inserted
+ *               false otherwise
+ */
+static bool addEdge(RNode *source, RNode *target, const char *label){
+    return edgesInsertLast(source->edges, target, label);
+}
+
+/**
+ * @brief updates the label of an edge
+ * 
+ * @param e a pointer to Edge
+ * @param newLabel a string, the new label 
+ */
+static void setEdgeLabel(Edge *e, char *newLabel){
+    if (e->label){
+        free(e->label);
+    }
+    e->label = duplicate_string(newLabel);
+    if (!e->label){
+        free(e);
+        terminate("Error : Failed to duplicate string");
+    }
+}
+
+/**
+ * @brief Creates a new RNode object (radix node)
+ * 
+ * @param key a string, the key of the new node
+ * 
+ * @return RNode*, a pointer to a valid RNode object 
+ *         NULL, in case of error
+ */
+static RNode *rnNew(const char *key){
+    RNode *n = malloc(sizeof(RNode));
+    if (!n){
+        printf("Error : Failed to allocate a new node\n");
+        return NULL;
+    }
+    n->edges = edgeListNew();
+    if (!n->edges){
+        free(n);
+        return NULL;
+    }
+    n->key = duplicate_string(key);
+    if (!n->key){
+        free(n);
+        free(n->edges);
+        return NULL;
+    }
+
+    return n;
+}
+
+/* ----------------- RADIX SET OPERATIONS --------------------- */
+
+Set *setCreateEmpty(void){
+    Set *radix = malloc(sizeof(Set));
+    if (!radix){
+        printf("radix : allocation error\n");
+        return NULL;
+    }
+
+    radix->root = NULL;
+    radix->size = 0;
+ 
+    return radix;
+}//end setCreateEmpty
+
+// bool setContains(const Set *radix, const char *key){
+//     if (radix->root == NULL) // set is empty
+//         return false;
+    
+//     RNode *n = radix->root;
+//     Edge *e = NULL;
+
+//     char *pref = duplicate_string(n->key); // current prefix
+//     if (!pref){
+//         setFree(radix);
+//         free(key);
+//         terminate("Error : Failed to duplicate pref in setContains");
+//     }
+
+//     char *tmp = duplicate_string(n->key); // store the latest prefix
+//     if (!tmp){
+//         free(pref);
+//         setFree(radix);
+//         free(key);
+//         terminate("Error : Failed to duplicate tmp in setContains");
+//     }
+ 
+//     while (n != NULL){
+         
+//         int cmp = strcmp(key, n->key);
+//         if (cmp == 0){
+//             free(tmp);
+//             free(pref);
+//             return true;
+//         }
+        
+//         if (isLeaf(n)){ 
+//             // node is a leaf, there's no further moves
+//             free(pref);
+//             free(tmp);
+//             return false;
+//         }
+        
+//         e = n->edges->head;
+//         bool isPref = false;
+//         while (e != NULL && !isPref){
+
+//             // concatenate the current prefix with the current edge label
+//             concatenate_string(&pref, e->label); 
+            
+//             if (isPrefix(key, pref)){
+                
+//                 copy_string(&tmp, pref); // update tmp to the current prefix
+//                 n = e->targetNode;
+//                 isPref = true;
+//             }
+
+//             else {
+//                 copy_string(&pref, tmp); // back the the latest prefix
+//                 e = e->next;
+//             }     
+//         }
+//         if (e == NULL){ 
+//             // all edges of the current node have been visited and key was not found
+//             free(tmp);
+//             free(pref);  
+//             return false;
+//         }
+//     }
+   
+//     free(tmp);
+//     free(pref);
+//     return false;
+// }//end setContains
+
+
+
+bool setContains(const Set *radix, const char *key){
+    if (radix->root == NULL) // set is empty
+        return false;
+    
+    RNode *n = radix->root;
+    Edge *e = NULL;
+
+    char *pref = duplicate_string(n->key); // current prefix
+    if (!pref){
+        return false;
+    }
+
+    char *tmp = duplicate_string(n->key); // store the latest prefix
+    if (!tmp){
+        free(pref);
+        return false;
+    }
+ 
+    while (n != NULL){
+         
+        int cmp = strcmp(key, n->key);
+        if (cmp == 0){
+            free(tmp);
+            free(pref);
+            return true;
+        }
+        
+        if (isLeaf(n)){ 
+            // node is a leaf, there's no further moves
+            free(pref);
+            free(tmp);
+            return false;
+        }
+        
+        e = n->edges->head;
+        bool isPref = false;
+        while (e != NULL && !isPref){
+            char *rest = getRest(key, pref);
+            if (!rest){
+                free(pref);
+                free(tmp);
+                return false;
+            }
+
+            char *commonPref = getCommonPref(rest, e->label);
+            if (!commonPref){
+                free(rest);
+                free(tmp);
+                free(pref);
+                return false;
+            }
+            if (strlen(commonPref) > 0){
+                concatenate_string(&pref, e->label);
+
+                n = e->targetNode;
+                isPref = true;
+            }
+            
+            else {
+                e = e->next;
+            }
+
+        }
+
+        if (e == NULL){ 
+            // all edges of the current node have been visited and key was not found
+            free(tmp);
+            free(pref);  
+            return false;
+        }
+    }
+   
+    free(tmp);
+    free(pref);
+    return false;
+}//end setContains
+
+
+
+
+
+
 int setInsert(Set *radix, const char *key){
     
     if (!radix)
         return -1;
 
-    // Set is empty
+    // SET IS EMPTY
     if (radix->root == NULL){
         radix->root = rnNew("");
         if (!radix->root){
@@ -373,12 +545,16 @@ int setInsert(Set *radix, const char *key){
             return -1;
         }
 
-        addEdge(radix->root, newNode, key);
+        if (!addEdge(radix->root, newNode, key)){ // add an edge from root
+            free(newNode);
+            return -1;
+        }
         radix->size++;
       
         return 1;
     }
 
+    // Start at the root
     RNode *n = radix->root;
     Edge *e = NULL;
 
@@ -407,11 +583,11 @@ int setInsert(Set *radix, const char *key){
         e = n->edges->head;
         bool prefix = false;
         while (e != NULL && !prefix){
-
-            concatenate_string(&pref, e->label);
+            
+            concatenate_string(&pref, e->label); // concatenate the current label with current prefix
             if (isPrefix(key, pref)){
                
-                copy_string(&tmp, pref);
+                copy_string(&tmp, pref); // update tmp to the current prefix
                 n = e->targetNode;
                  
                 prefix = true;   
@@ -419,11 +595,11 @@ int setInsert(Set *radix, const char *key){
 
             else {
                 
-                copy_string(&pref, tmp); // back to the latest state 
+                copy_string(&pref, tmp); // back to the latest state (latest prefix)
                      
-                char *rest = getRest(key, pref);                 
-                   
-                char *commonPref = getCommonPref(e->label, rest);
+                char *rest = getRest(key, pref); // rest of the current prefix         
+                
+                char *commonPref = getCommonPref(e->label, rest); // common prefix of the edge label and the rest of current prefix
                 free(rest);
                 
                 if (!commonPref){
@@ -435,7 +611,7 @@ int setInsert(Set *radix, const char *key){
                  
                 if (strlen(commonPref) > 0){
                     
-                    concatenate_string(&pref, commonPref);
+                    concatenate_string(&pref, commonPref); // concatenate the common prefix with the current prefix 
                 
                     RNode *newNode = rnNew(key); // create the new node
                         if (!newNode){
@@ -450,11 +626,18 @@ int setInsert(Set *radix, const char *key){
                     if (isPrefix(oldNode->key, key)){ // if the key-to-insert is a prefix of the node's key
                         e->targetNode = newNode;
                             
-                        char *newRest = getRest(newNode->key, tmp);
-                        setEdgeLabel(e, newRest);
+                        char *newRest = getRest(newNode->key, tmp); // the remaining substring of new node
+                        setEdgeLabel(e, newRest); // update the new node's label
 
-                        char *oldRest = getRest(oldNode->key, pref);
-                        addEdge(newNode, oldNode, oldRest);
+                        char *oldRest = getRest(oldNode->key, pref); // the remaining substring of old node
+                        if (!addEdge(newNode, oldNode, oldRest)){
+                            free(tmp);
+                            free(pref);
+                            free(oldRest);
+                            free(commonPref);
+                            free(newRest);
+                            return -1;
+                        }
 
                         radix->size++;
 
@@ -464,7 +647,6 @@ int setInsert(Set *radix, const char *key){
                         free(commonPref);
                         free(newRest);
                         return 1;
-
                     }
 
                     else { // if the key-to-insert is not a prefix of the node's key
@@ -489,12 +671,27 @@ int setInsert(Set *radix, const char *key){
                         setEdgeLabel(e, commonPref);
 
                         // add an edge to the old node with a new edge label
-                        addEdge(emptyNode, oldNode, oldRest);
+                        if (!addEdge(emptyNode, oldNode, oldRest)){
+                            free(commonPref);
+                            free(tmp);
+                            free(pref);
+                            free(oldRest);
+                            return -1;
+
+                        }
                             
                         // add an edge to the new node with a new edge label
                         char *newRest = getRest(newNode->key, pref);  
                         
-                        addEdge(emptyNode, newNode, newRest);
+                        if (!addEdge(emptyNode, newNode, newRest)){
+                            free(commonPref);
+                            free(tmp);
+                            free(pref);
+                            free(oldRest);
+                            free(newRest);
+                            return -1;
+                        }
+
                         radix->size++;
 
                         free(commonPref);
@@ -513,7 +710,7 @@ int setInsert(Set *radix, const char *key){
 
         }//end while 2
 
-        if (isLeaf(n) && strcmp(n->key, key) != 0){ // we can't make any progress
+        if (isLeaf(n) && strcmp(n->key, key) != 0){ // node is a leaf and we cannot make any progress
             RNode *newNode = rnNew(key);
             if (!newNode){
                 free(tmp);
@@ -522,7 +719,13 @@ int setInsert(Set *radix, const char *key){
             }
 
             char *newRest = getRest(newNode->key, pref);
-            addEdge(n, newNode, newRest);
+            if (!addEdge(n, newNode, newRest)){
+                free(pref);
+                free(tmp);
+                free(newRest);
+                return -1;
+            }
+
             radix->size++;
             
             free(pref);
@@ -543,7 +746,11 @@ int setInsert(Set *radix, const char *key){
 
             char *newRest = getRest(key, pref);
         
-            addEdge(n, newNode, newRest);
+            if (!addEdge(n, newNode, newRest)){
+                free(newRest);
+                free(tmp);
+                free(pref);
+            }
 
             radix->size++;
 
@@ -557,7 +764,14 @@ int setInsert(Set *radix, const char *key){
             cmp = strcmp(pref, key);
             if (cmp == 0 && strlen(e->targetNode->key) == 0){
                 free(e->targetNode->key); // empty the old node key
+
                 e->targetNode->key = duplicate_string(key);
+                if (!e->targetNode->key){
+                    free(tmp);
+                    free(pref);
+                    return -1;
+                }
+
                 radix->size++;
                 free(tmp);
                 free(pref);
@@ -568,7 +782,7 @@ int setInsert(Set *radix, const char *key){
     free(tmp);
     free(pref);
     return -1;   
-}
+}// end setInsert
 
 size_t setNbKeys(const Set *radix){
     if (!radix){
@@ -576,11 +790,22 @@ size_t setNbKeys(const Set *radix){
     }
 
     return radix->size;
-}
+}//end setNbKeys
 
-List *setGetAllStringPrefixes(const Set *set, const char *str)
+void setFree(Set *set){
+    if (!set)
+        return;
+        
+    if (set->root){
+        freeRec(set->root);
+    }
+
+    free(set);
+}// end setFree
+
+List *setGetAllStringPrefixes(const Set *set, const char *str) 
 {
-
+   // we proceed as in search
    List *prefixList = listNew();
    if (!prefixList){
     printf("Failed to get all prefixes\n");
@@ -591,7 +816,6 @@ List *setGetAllStringPrefixes(const Set *set, const char *str)
     return prefixList;
    }
    
-
     RNode *n = set->root;
     Edge *e = NULL;
     char *pref = duplicate_string(n->key);
@@ -609,7 +833,21 @@ List *setGetAllStringPrefixes(const Set *set, const char *str)
     size_t strSize = strlen(str); // maximum prefixes count
     while (n != NULL && pCount < strSize){
         if (strcmp(str, n->key) == 0){ // no need to go further
-            listInsertLast(prefixList, duplicate_string(n->key));
+
+            char *copy = duplicate_string(n->key);
+            if (!copy){
+                free(tmp);
+                free(pref);
+                return NULL;
+            }
+
+            if (!listInsertLast(prefixList, copy)){
+                free(copy);
+                free(tmp);
+                free(pref);
+                return NULL;
+            }
+
             pCount++;
             free(pref);
             free(tmp);
@@ -617,7 +855,21 @@ List *setGetAllStringPrefixes(const Set *set, const char *str)
         }
        
         if (strlen(n->key) > 0 && isPrefix(str, n->key)){
-            listInsertLast(prefixList, duplicate_string(n->key));
+            
+            char *copy = duplicate_string(n->key);
+            if (!copy){
+                free(tmp);
+                free(pref);
+                return NULL;
+            }
+
+            if (!listInsertLast(prefixList, copy)){
+                free(copy);
+                free(tmp);
+                free(pref);
+                return NULL;
+            }
+
             pCount++;
         }
         if (isLeaf(n)){
@@ -629,6 +881,7 @@ List *setGetAllStringPrefixes(const Set *set, const char *str)
         e = n->edges->head;
         bool isPref = false;
         while (e != NULL && !isPref){
+            
             concatenate_string(&pref, e->label);
 
             if (isPrefix(str, pref)){
@@ -652,6 +905,5 @@ List *setGetAllStringPrefixes(const Set *set, const char *str)
     free(pref);
     free(tmp);
     return prefixList;
-}
-
+}//end setGetAllStringPrefixes
 

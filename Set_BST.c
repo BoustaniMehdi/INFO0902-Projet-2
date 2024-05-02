@@ -189,12 +189,12 @@ bool setContains(const Set *bst, const char *key)
 
 /* student code starts here */
 
-#define MINSIZE 1 // minimum size of a word
+#define MINSIZE 1 // minimum size of a word in the lexicon
 
 /* Prototypes of static functions */
 
 static bool isPrefix(const char *str, const char *word);
-static void fillPrefixes(List *l, const char *str, BNode *n, char *wordMin);
+static bool fillPrefixes(List *l, const char *str, size_t size, BNode *n, char *wordMin);
 
 
 /**
@@ -254,11 +254,18 @@ static char *getCommonPref(const char *str1, const char *str2){
  *
  * @param l  the list to fill
  * @param str the string which prefixes have to be filled
+ * @param size size of str
  * @param n the root of the tree
  * @param wordMin the smallest word (smallest prefix possible)
+ * 
+ * @return true if list was filled successfully
+ *         false in case of error 
  *               
  */
-static void fillPrefixes(List *l, const char *str, BNode *n, char *wordMin){
+static bool fillPrefixes(List *l, const char *str, size_t size, BNode *n, char *wordMin){
+    if (listSize(l) == size){
+        return true;
+    }
     if (n != NULL){
 
         int cmp1 = strcmp(n->key, wordMin); // compare the node's key with the minimum prefix
@@ -268,25 +275,25 @@ static void fillPrefixes(List *l, const char *str, BNode *n, char *wordMin){
           char *copy = duplicate_string(n->key);
           if (!copy){
             printf("Error : Duplication failed\n");
-            return;
+            return false;
           }
           if (!listInsertLast(l, copy)){
                 printf("Failed to fill prefixes into list\n");
                 free(copy);
-                return;
+                return false;
             }
             
             if (cmp1 == 0 && cmp2 == 0){ // we only have 1 prefix
-                return;
+                return true; 
             }
 
             else if (cmp1 == 0 || cmp2 == 0){
                 if (cmp1 == 0){ // the minimum (smallest) prefix has been found -> continue search in right sub-tree
-                    fillPrefixes(l, str, n->right, wordMin); 
+                    return fillPrefixes(l, str, size, n->right, wordMin); 
                 }
 
                 else if (cmp2 == 0) // the maximum (largest) prefix has been found -> continue search in left sub-tree
-                    fillPrefixes(l, str, n->left, wordMin);
+                    return fillPrefixes(l, str, size, n->left, wordMin);
             }
 
             else { // prefix found is between smallest and largest prefixes -> continue search in both sub-trees
@@ -294,19 +301,31 @@ static void fillPrefixes(List *l, const char *str, BNode *n, char *wordMin){
                 char nextChar = str[keySize];
                 char *newMin = malloc(sizeof(char) * (keySize + 2));
                 if (!newMin){
-                    // free(copy)
-
-                    return;
+                    printf("Allocation Error : Failed to allocate newMin\n");
+                    return false;
                 }
                 strcpy(newMin, n->key);
                 newMin[keySize] = nextChar;
                 newMin[keySize + 1] = '\0';
-
-                fillPrefixes(l, str, n->right, newMin);
+                // newMin is the new minimum prefix for the right subtree
+                if (!fillPrefixes(l, str, size, n->right, newMin)){
+                    free(newMin);
+                    return false;
+                }
 
                 char *newMax = duplicate_string(n->key);
+                if (!newMax){
+                    printf("Error : Failed to duplicate key\n");
+                    free(newMax);
+                    return false;
+                }
                 newMax[keySize] = '\0';
-                fillPrefixes(l, newMax, n->left, wordMin);
+                // newMax is the new maximum prefix for the left subtree
+                if (!fillPrefixes(l, newMax, size, n->left, wordMin)){
+                    free(newMax);
+                    return false;
+                }
+
                 free(newMax);
                 free(newMin);
             }
@@ -315,24 +334,34 @@ static void fillPrefixes(List *l, const char *str, BNode *n, char *wordMin){
         // node's key is not a prefix of the word (str)
         else {
             if (cmp2 > 0) // node's key is greater than the largest prefix -> continue search in left sub-tree
-                fillPrefixes(l, str, n->left, wordMin);
+                return fillPrefixes(l, str, size,  n->left, wordMin);
 
             else {
                 if (cmp1 <= 0) // node's key is less than the smallest prefix -> continue search in right sub-tree
-                    fillPrefixes(l, str, n->right, wordMin);
+                    return fillPrefixes(l, str, size, n->right, wordMin);
 
                 else if (cmp1 > 0){ // continue search in both sub-tree
-                    char *tmp = getCommonPref(n->key, str);
-                    // tmp is the new minimum prefix for the right sub tree
-                    fillPrefixes(l, str, n->right, tmp);
-                    // tmp is the new maximum prefix for the right sub tree 
-                    fillPrefixes(l, tmp, n->left, wordMin);
-                    free(tmp);
+                    char *commonPref = getCommonPref(n->key, str);
+                    if (!commonPref){
+                        printf("Allocation Error : Failed to allocate commonPref\n");
+                        return false;
+                    }
+                    // commonPref is the new minimum prefix for the right sub tree
+                    if (!fillPrefixes(l, str, size, n->right, commonPref)){
+                        free(commonPref);
+                        return false;
+                    }
+                    // commonPref is the new maximum prefix for the right sub tree 
+                    if (!fillPrefixes(l, commonPref, size, n->left, wordMin)){
+                        free(commonPref);
+                        return false;
+                    }
+                    free(commonPref);
                 }
             }
         }
     }
-    return; 
+    return true; 
 }
 
 
@@ -344,18 +373,25 @@ List *setGetAllStringPrefixes(const Set *set, const char *str)
     return NULL;
    }
 
-    // Minimum prefix possible of a word with a minimum size of 1
+    // Minimum prefix possible of a word with a minimum size of 1 (MINSIZE)
     char *wordMin = malloc(sizeof(char) * (MINSIZE + 1));
     if (!wordMin){
         fprintf(stderr, "Memory allocation failed for minimum prefix\n");
         return NULL;
     }
-
     strncpy(wordMin, str, MINSIZE);
     wordMin[MINSIZE] = '\0';
 
    BNode *n = set->root;
-   fillPrefixes(prefixList, str, n, wordMin);
+   size_t strSize = strlen(str);
+
+   // fill prefixes in prefixList
+   if (!fillPrefixes(prefixList, str, strSize, n, wordMin)){
+    listFree(prefixList, true);
+    printf("Error : Failed to fill prefixes in the list\n");
+    free(wordMin);
+    return NULL;
+   }
 
    free(wordMin);
 

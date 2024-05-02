@@ -256,7 +256,6 @@ void boardDisplay(Board *board)
 }
 
 
-
 /* Student code starts here */
 
 /* Prototypes */
@@ -265,7 +264,6 @@ static char *duplicate_string(const char *str);
 static bool isInBoard(int r, int c, int size);
 static bool getWord(Board *board, char *word, int r, int c, int incr, int incc);
 static void addFoundPrefixes(Board *board, Set* set, Set* filledSet, List* wordsList, int r, int c, int incr, int incc);
-
 
 /* static functions */
 
@@ -300,7 +298,6 @@ static bool isInBoard(int r, int c, int size){
     return r >= 0 && r < size
         && c >= 0 && c < size;
 }
-
 
 /**
  * @brief return true if the word is found at position (r,c) in the direction
@@ -354,21 +351,46 @@ static void addFoundPrefixes(Board *board, Set* set, Set* filledSet, List* words
     size_t n = board->size;
     char *word = malloc((sizeof(char) * n + 1));
     if (!word){
+        boardFree(board);
+        setFree(set);
+        setFree(filledSet);
+        listFree(wordsList, true);
         terminate("Failed to allocate memory for word");
     }
 
     if (getWord(board, word, r, c, incr, incc)){
+
         List *foundPrefixes = setGetAllStringPrefixes(set, word);
 
         if (!foundPrefixes){
+            boardFree(board);
+            setFree(set);
+            setFree(filledSet);
+            listFree(wordsList, true);
+            listFree(foundPrefixes, true);
             terminate("Failed to get prefixes of the word");
         }
         for (LNode *p = foundPrefixes->head; p != NULL; p = p->next){
 
             char *copy = duplicate_string(p->value);
+            if (!copy){
+                boardFree(board);
+                setFree(set);
+                setFree(filledSet);
+                listFree(wordsList, true);
+                listFree(foundPrefixes, true);
+                terminate("Failed to duplicate string");
+            }
 
             if (setInsert(filledSet, copy) == 1){
-                if (!listInsertLast(wordsList, copy)){
+
+                if (!listInsertLast(wordsList, copy)){ 
+                    free(copy);
+                    boardFree(board);
+                    setFree(set);
+                    setFree(filledSet);
+                    listFree(wordsList, true);
+                    listFree(foundPrefixes, true);
                     terminate("Failed to add matching word to list");
                 }
             }
