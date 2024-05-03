@@ -374,77 +374,6 @@ Set *setCreateEmpty(void){
     return radix;
 }//end setCreateEmpty
 
-// bool setContains(const Set *radix, const char *key){
-//     if (radix->root == NULL) // set is empty
-//         return false;
-    
-//     RNode *n = radix->root;
-//     Edge *e = NULL;
-
-//     char *pref = duplicate_string(n->key); // current prefix
-//     if (!pref){
-//         setFree(radix);
-//         free(key);
-//         terminate("Error : Failed to duplicate pref in setContains");
-//     }
-
-//     char *tmp = duplicate_string(n->key); // store the latest prefix
-//     if (!tmp){
-//         free(pref);
-//         setFree(radix);
-//         free(key);
-//         terminate("Error : Failed to duplicate tmp in setContains");
-//     }
- 
-//     while (n != NULL){
-         
-//         int cmp = strcmp(key, n->key);
-//         if (cmp == 0){
-//             free(tmp);
-//             free(pref);
-//             return true;
-//         }
-        
-//         if (isLeaf(n)){ 
-//             // node is a leaf, there's no further moves
-//             free(pref);
-//             free(tmp);
-//             return false;
-//         }
-        
-//         e = n->edges->head;
-//         bool isPref = false;
-//         while (e != NULL && !isPref){
-
-//             // concatenate the current prefix with the current edge label
-//             concatenate_string(&pref, e->label); 
-            
-//             if (isPrefix(key, pref)){
-                
-//                 copy_string(&tmp, pref); // update tmp to the current prefix
-//                 n = e->targetNode;
-//                 isPref = true;
-//             }
-
-//             else {
-//                 copy_string(&pref, tmp); // back the the latest prefix
-//                 e = e->next;
-//             }     
-//         }
-//         if (e == NULL){ 
-//             // all edges of the current node have been visited and key was not found
-//             free(tmp);
-//             free(pref);  
-//             return false;
-//         }
-//     }
-   
-//     free(tmp);
-//     free(pref);
-//     return false;
-// }//end setContains
-
-
 
 bool setContains(const Set *radix, const char *key){
     if (radix->root == NULL) // set is empty
@@ -453,15 +382,15 @@ bool setContains(const Set *radix, const char *key){
     RNode *n = radix->root;
     Edge *e = NULL;
 
-    char *pref = duplicate_string(n->key); // current prefix
+    char *pref = duplicate_string(n->key); //initializing an empty pref
     if (!pref){
-        return false;
+        terminate("Error : Failed to duplicate pref in setContains");
     }
 
-    char *tmp = duplicate_string(n->key); // store the latest prefix
+    char *tmp = duplicate_string(n->key); //initializing an empty string
     if (!tmp){
         free(pref);
-        return false;
+        terminate("Error : Failed to duplicate tmp in setContains");
     }
  
     while (n != NULL){
@@ -483,33 +412,22 @@ bool setContains(const Set *radix, const char *key){
         e = n->edges->head;
         bool isPref = false;
         while (e != NULL && !isPref){
-            char *rest = getRest(key, pref);
-            if (!rest){
-                free(pref);
-                free(tmp);
-                return false;
-            }
 
-            char *commonPref = getCommonPref(rest, e->label);
-            if (!commonPref){
-                free(rest);
-                free(tmp);
-                free(pref);
-                return false;
-            }
-            if (strlen(commonPref) > 0){
-                concatenate_string(&pref, e->label);
-
+            // concatenate the current prefix with the current edge label
+            concatenate_string(&pref, e->label); 
+            
+            if (isPrefix(key, pref)){
+                
+                copy_string(&tmp, pref); // update tmp to the current prefix
                 n = e->targetNode;
                 isPref = true;
             }
-            
+
             else {
+                copy_string(&pref, tmp); // back the the latest prefix
                 e = e->next;
-            }
-
+            }     
         }
-
         if (e == NULL){ 
             // all edges of the current node have been visited and key was not found
             free(tmp);
@@ -522,10 +440,6 @@ bool setContains(const Set *radix, const char *key){
     free(pref);
     return false;
 }//end setContains
-
-
-
-
 
 
 int setInsert(Set *radix, const char *key){
@@ -558,12 +472,12 @@ int setInsert(Set *radix, const char *key){
     RNode *n = radix->root;
     Edge *e = NULL;
 
-    char *pref = duplicate_string(n->key);
+    char *pref = duplicate_string(n->key); //initializing an empty string
     if (!pref){
         return -1;
     }
 
-    char *tmp = duplicate_string(n->key);
+    char *tmp = duplicate_string(n->key); //initializing an empty string
     if (!tmp){
         free(pref);
         return -1;
@@ -585,6 +499,7 @@ int setInsert(Set *radix, const char *key){
         while (e != NULL && !prefix){
             
             concatenate_string(&pref, e->label); // concatenate the current label with current prefix
+
             if (isPrefix(key, pref)){
                
                 copy_string(&tmp, pref); // update tmp to the current prefix
@@ -597,13 +512,19 @@ int setInsert(Set *radix, const char *key){
                 
                 copy_string(&pref, tmp); // back to the latest state (latest prefix)
                      
-                char *rest = getRest(key, pref); // rest of the current prefix         
+                char *rest = getRest(key, pref); // rest of the current prefix   
+                if (!rest){
+                    printf("Error : Failed to get rest in setInsert\n");
+                    free(tmp);
+                    free(pref);
+                    return -1;
+                }      
                 
                 char *commonPref = getCommonPref(e->label, rest); // common prefix of the edge label and the rest of current prefix
                 free(rest);
                 
                 if (!commonPref){
-
+                    printf("Error : Failed to get common prefix in setInsert\n");
                     free(tmp);
                     free(pref);
                     return -1;
@@ -818,12 +739,12 @@ List *setGetAllStringPrefixes(const Set *set, const char *str)
    
     RNode *n = set->root;
     Edge *e = NULL;
-    char *pref = duplicate_string(n->key);
+    char *pref = duplicate_string(n->key); //initializing an empty pref
     if (!pref){
         return NULL;
     }
 
-    char *tmp = duplicate_string(n->key);
+    char *tmp = duplicate_string(n->key); //initializing an empty string
     if (!tmp){
         free(pref);
         return NULL;
@@ -854,8 +775,8 @@ List *setGetAllStringPrefixes(const Set *set, const char *str)
             return prefixList;
         }
        
-        if (strlen(n->key) > 0 && isPrefix(str, n->key)){
-            
+        if (strlen(n->key) > 0 && isPrefix(str, n->key)){ // node is not empty and its key is a  prefix
+              
             char *copy = duplicate_string(n->key);
             if (!copy){
                 free(tmp);
@@ -906,4 +827,3 @@ List *setGetAllStringPrefixes(const Set *set, const char *str)
     free(tmp);
     return prefixList;
 }//end setGetAllStringPrefixes
-

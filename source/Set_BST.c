@@ -274,7 +274,7 @@ static bool fillPrefixes(List *l, const char *str, size_t size, BNode *n, char *
         if (isPrefix(str, n->key)){
           char *copy = duplicate_string(n->key);
           if (!copy){
-            printf("Error : Duplication failed\n");
+            printf("Error : Duplication failed\n"); 
             return false;
           }
           if (!listInsertLast(l, copy)){
@@ -319,7 +319,7 @@ static bool fillPrefixes(List *l, const char *str, size_t size, BNode *n, char *
                     free(newMax);
                     return false;
                 }
-                newMax[keySize] = '\0';
+                newMax[keySize-1] = '\0';
                 // newMax is the new maximum prefix for the left subtree
                 if (!fillPrefixes(l, newMax, size, n->left, wordMin)){
                     free(newMax);
